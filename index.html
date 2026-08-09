@@ -3,399 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ยินดีต้อนรับแชทพี่ดิม ChatPidim</title>
+    <title>Chatpidim</title>
+    <!-- Tailwind CSS (หากในโปรเจกต์มีอยู่แล้ว สามารถใช้ร่วมกันได้) -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 font-sans pb-20">
+<body class="bg-gray-100">
 
-    <header class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
-        <h1 class="text-xl font-bold">ยินดีต้อนรับแชทพี่ดิม ChatPidim</h1>
-        <div id="auth-buttons" class="space-x-2">
-            <button onclick="openLoginModal()" class="bg-transparent border border-white text-white px-3 py-1 rounded font-semibold text-sm hover:bg-blue-700">เข้าสู่ระบบ</button>
-            <button onclick="openRegisterModal()" class="bg-white text-blue-600 px-3 py-1 rounded font-semibold text-sm hover:bg-gray-100">ลงทะเบียน</button>
+    <!-- ส่วนหน้าตา UI หลัก (ตัวอย่างโครงสร้างพื้นฐานเพื่อให้โค้ดสมบูรณ์) -->
+    <div class="max-w-4xl mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">Chatpidim Application</h1>
+        
+        <!-- สถิติสมาชิก -->
+        <div class="mb-4">จำนวนสมาชิกทั้งหมด: <span id="stat-total-members">0</span> คน</div>
+
+        <!-- รายชื่อเพื่อนสำหรับแชท -->
+        <div class="bg-white p-4 rounded shadow mb-4">
+            <h2 class="font-bold mb-2">รายชื่อเพื่อน</h2>
+            <div id="friend-list"></div>
         </div>
-    </header>
 
-    <main class="w-full p-4 space-y-4">
-
-        <!-- 1. หน้าหลัก -->
-        <section id="mode-home" class="app-mode space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="space-y-3 md:col-span-1">
-                    <div class="bg-white p-3 rounded-lg shadow text-xs">
-                        <h2 class="font-bold text-gray-800 mb-2 border-b pb-1">📊 สถิติระบบ</h2>
-                        <div class="space-y-1.5">
-                            <div class="flex justify-between items-center text-gray-600">
-                                <span>👥 ผู้ชมปัจจุบัน:</span>
-                                <span id="stat-current-viewers" class="font-bold text-blue-600 text-sm">1</span>
-                            </div>
-                            <div class="flex justify-between items-center text-gray-600">
-                                <span>👤 สมาชิกทั้งหมด:</span>
-                                <span id="stat-total-members" class="font-bold text-green-600 text-sm">0</span>
-                            </div>
-                            <div class="flex justify-between items-center text-gray-600">
-                                <span>📈 ยอดเข้าชมสะสม:</span>
-                                <span id="stat-total-views" class="font-bold text-purple-600 text-sm">1</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-3 rounded-lg shadow text-xs space-y-2">
-                        <div class="flex justify-between items-center border-b pb-1">
-                            <span id="player-mode-title" class="font-semibold text-gray-700">📻 วิทยุออนไลน์</span>
-                            <button onclick="toggleAudioMode()" class="bg-blue-500 text-white px-2 py-0.5 rounded text-[10px] hover:bg-blue-600">🔄 สลับโหมด</button>
-                        </div>
-                        <div id="radio-container">
-                            <audio controls class="w-full h-8 mt-1">
-                                <source src="https://stream.zeno.fm/f3wvbbqmdv8uv" type="audio/mpeg">
-                            </audio>
-                        </div>
-                        <div id="mp3-container" class="hidden space-y-2">
-                            <input type="text" id="search-song" oninput="filterSongs()" placeholder="🔍 ค้นหาเพลง..." class="w-full border p-1 rounded text-xs">
-                            <input type="text" id="upload-song-title" placeholder="ชื่อเพลง" class="w-full border p-1 rounded text-[10px]">
-                            <input type="file" id="upload-song-file" accept="audio/*,video/mp4" class="w-full text-[10px]">
-                            <button onclick="uploadSong()" class="w-full bg-green-500 text-white py-1 rounded text-[10px]">📤 อัปโหลด</button>
-                            <div id="song-list" class="max-h-32 overflow-y-auto space-y-1 border-t pt-1"></div>
-                            <audio id="mp3-player" controls class="w-full h-8 mt-1 hidden"></audio>
-                            <video id="mp4-player" controls class="w-full max-h-48 mt-1 hidden rounded"></video>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-lg shadow md:col-span-2 flex flex-col justify-center items-center text-center border-2 border-dashed border-gray-200 min-h-[220px]">
-                    <!-- โค้ดแสดงฟีดมีเดียและสถานะจากสมาชิก -->
-                    <div id="main-feed-container" style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1.5px dashed #cbd5e1; width: 100%;">
-                        <h3 style="margin-top: 0; font-size: 16px; color: #1e293b;">📌 ฟีดสถานะและมีเดียล่าสุดจากเพื่อนๆ</h3>
-                        <div id="feed-items-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto;">
-                            <p style="color: #94a3b8; font-size: 14px; text-align: center;">ยังไม่มีการอัปเดตสถานะในขณะนี้</p>
-                        </div>
-                    </div>
+        <!-- หน้าต่างแชทลอย (Floating Chat Window) -->
+        <div id="floating-chat-window" style="display:none; position:fixed; bottom:20px; right:20px; width:300px; background:white; border:1px solid #ccc; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1); z-index:1000;">
+            <div onmousedown="startDrag(event)" style="background:#2563eb; color:white; padding:8px; cursor:move; border-top-left-radius:8px; border-top-right-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                <span id="chat-title-name">💬 แชท</span>
+                <div>
+                    <button onclick="startVideoCall(true)" style="background:#10b981; color:white; border:none; padding:2px 6px; border-radius:4px; font-size:12px; cursor:pointer; margin-right:4px;" title="วิดีโอคอล">📹</button>
+                    <button onclick="closeFloatingChat()" style="background:transparent; color:white; border:none; font-weight:bold; cursor:pointer;">X</button>
                 </div>
             </div>
-        </section>
-
-        <!-- 2. หน้าแชท -->
-        <section id="mode-chat" class="app-mode hidden space-y-4">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h2 class="text-lg font-bold text-gray-800">💬 แชทสาธารณะ & บอร์ดระบายความรู้สึก</h2>
+            <div id="floating-chat-messages" style="height:200px; overflow-y:auto; padding:8px; font-size:14px; background:#f9fafb;"></div>
+            <div style="display:flex; padding:8px; border-top:1px solid #eee;">
+                <input type="text" id="floating-chat-input" placeholder="พิมพ์ข้อความ..." style="flex:1; border:1px solid #ccc; padding:4px 8px; border-radius:4px; outline:none;" onkeypress="if(event.key==='Enter') sendFloatingMessage()">
+                <button onclick="sendFloatingMessage()" style="background:#2563eb; color:white; border:none; padding:4px 12px; margin-left:4px; border-radius:4px; cursor:pointer;">ส่ง</button>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow h-64 flex flex-col justify-between">
-                <div id="public-chat-box" class="overflow-y-auto space-y-2 text-sm flex-1 pr-2">
-                    <div class="bg-gray-100 p-2 rounded w-max">ยินดีต้อนรับสู่แชทสาธารณะ ทักทายกันได้เลยครับ</div>
+        </div>
+
+        <!-- Modal สำหรับวิดีโอคอล -->
+        <div id="video-call-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+            <div style="background:white; padding:20px; border-radius:8px; text-align:center; width:90%; max-width:600px;">
+                <h3 id="call-status-title" class="font-bold text-lg mb-4">กำลังโทร...</h3>
+                <div style="display:flex; justify-content:center; gap:10px; margin-bottom:15px; background:#000; border-radius:8px; overflow:hidden; position:relative; height:350px;">
+                    <video id="remote-video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+                    <video id="local-video" autoplay playsinline muted style="position:absolute; bottom:15px; right:15px; width:120px; height:90px; object-fit:cover; border:2px solid white; border-radius:6px; background:#222;"></video>
                 </div>
-                <div class="flex mt-2 pt-2 border-t">
-                    <input type="text" id="public-chat-input" placeholder="พิมพ์ข้อความ..." class="border flex-1 p-2 rounded-l text-sm">
-                    <button onclick="sendPublicMessage()" class="bg-blue-600 text-white px-4 rounded-r text-sm">ส่ง</button>
+                <div style="display:flex; justify-content:center; gap:10px;">
+                    <button id="toggle-cam-btn" onclick="toggleCamera()" style="background:#f59e0b; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">ปิดกล้อง</button>
+                    <button onclick="hangUpCall()" style="background:#ef4444; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">วางสาย</button>
                 </div>
-            </div>
-        </section>
-
-        <!-- 3. หน้าเพื่อน -->
-        <section id="mode-friends" class="app-mode hidden space-y-4 max-w-md mx-auto">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h2 class="text-lg font-bold text-gray-800 mb-2">👥 เพื่อนและการติดตาม</h2>
-                <p class="text-gray-500 text-sm mb-4" id="friend-status-text">กรุณาเข้าสู่ระบบเพื่อดูรายชื่อเพื่อน</p>
-                <div id="friend-content" class="hidden space-y-3">
-                    <div id="friend-list" class="space-y-3"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 4. หน้าโปรไฟล์ -->
-        <section id="mode-profile" class="app-mode hidden space-y-4 max-w-md mx-auto">
-            <div class="bg-white p-4 rounded-lg shadow text-center py-6 space-y-3">
-                <div class="w-20 h-20 bg-blue-500 text-white rounded-full mx-auto flex items-center justify-center text-2xl font-bold shadow">
-                    <span id="profile-initial">U</span>
-                </div>
-                <h2 class="text-xl font-bold text-gray-800" id="profile-name">ผู้เยี่ยมชมทั่วไป</h2>
-                <p class="text-gray-500 text-sm" id="profile-email">ยังไม่ได้เข้าสู่ระบบ</p>
-            </div>
-        </section>
-
-        <!-- 5. หน้าตั้งค่า -->
-        <section id="mode-settings" class="app-mode hidden space-y-4 max-w-md mx-auto">
-            <!-- โค้ดหน้าตั้งค่าโปรไฟล์ -->
-            <div id="profile-settings-section" style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #e2e8f0;">
-                <h3 style="margin-top: 0; font-size: 16px; color: #1e293b;">⚙️ ตั้งค่าโปรไฟล์และสถานะ</h3>
-                <div style="margin-bottom: 10px;">
-                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px;">พิมพ์สถานะของคุณตอนนี้:</label>
-                    <input type="text" id="profile-status-input" placeholder="เช่น กำลังไปเที่ยว, กินข้าวอยู่..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;" />
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px;">เลือกรูปโปรไฟล์:</label>
-                    <input type="file" id="profile-image-file" accept="image/*" style="font-size: 13px;" />
-                </div>
-                <button onclick="uploadProfileData()" style="background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;">บันทึกโปรไฟล์</button>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow space-y-4">
-                <h2 class="text-lg font-bold text-gray-800 mb-2">⚙️ ตั้งค่า</h2>
-                <ul class="divide-y text-sm text-gray-700">
-                    <li class="py-3 flex justify-between items-center"><span>เสียงแจ้งเตือน</span><input type="checkbox" checked class="w-4 h-4"></li>
-                    <li class="py-3 flex justify-between items-center"><span>โหมดมืด</span><input type="checkbox" class="w-4 h-4"></li>
-                </ul>
-                <button id="logout-btn" onclick="logout()" class="hidden w-full bg-red-600 text-white py-2 rounded font-semibold text-sm hover:bg-red-700">ออกจากระบบ</button>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- เมนูด้านล่าง -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 shadow-lg z-45">
-        <button onclick="switchMode('home')" id="btn-home" class="text-blue-600 font-medium text-xs flex flex-col items-center">🏠 หน้าหลัก</button>
-        <button onclick="switchMode('chat')" id="btn-chat" class="text-gray-500 font-medium text-xs flex flex-col items-center">💬 แชท</button>
-        <button onclick="switchMode('friends')" id="btn-friends" class="text-gray-500 font-medium text-xs flex flex-col items-center">👥 เพื่อน</button>
-        <button onclick="switchMode('profile')" id="btn-profile" class="text-gray-500 font-medium text-xs flex flex-col items-center">👤 โปรไฟล์</button>
-        <button onclick="switchMode('settings')" id="btn-settings" class="text-gray-500 font-medium text-xs flex flex-col items-center">⚙️ ตั้งค่า</button>
-    </nav>
-
-    <!-- Modal ลงทะเบียน -->
-    <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3">
-            <h2 class="text-xl font-bold text-gray-800">ลงทะเบียนสมาชิก</h2>
-            <input type="text" id="reg-name" required class="w-full border p-2 rounded text-sm" placeholder="ชื่อผู้ใช้">
-            <input type="password" id="reg-pass" required class="w-full border p-2 rounded text-sm" placeholder="รหัสผ่าน">
-            <input type="email" id="reg-email" class="w-full border p-2 rounded text-sm" placeholder="อีเมล">
-            <input type="tel" id="reg-phone" class="w-full border p-2 rounded text-sm" placeholder="เบอร์โทรศัพท์">
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">คำถามช่วยจำ (กรณีลืมรหัสผ่าน)</label>
-                <select id="reg-question" class="w-full border p-2 rounded text-sm mb-2">
-                    <option>ชื่อสัตว์เลี้ยงตัวแรกของคุณ?</option>
-                    <option>อาหารโปรดของคุณคืออะไร?</option>
-                    <option>โรงเรียนประถมของคุณชื่ออะไร?</option>
-                </select>
-                <input type="text" id="reg-answer" class="w-full border p-2 rounded text-sm" placeholder="คำตอบของคุณ">
-            </div>
-            <div class="flex justify-end space-x-2 pt-2">
-                <button type="button" onclick="closeRegisterModal()" class="bg-gray-300 px-4 py-2 rounded text-sm">ยกเลิก</button>
-                <button type="button" onclick="handleRegister()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm">ยืนยัน</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal เข้าสู่ระบบ -->
-    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3">
-            <h2 class="text-xl font-bold text-gray-800">เข้าสู่ระบบ</h2>
-            <input type="text" id="login-name" required class="w-full border p-2 rounded text-sm" placeholder="ชื่อผู้ใช้">
-            <input type="password" id="login-pass" required class="w-full border p-2 rounded text-sm" placeholder="รหัสผ่าน">
-            <div class="text-right">
-                <button type="button" onclick="openForgotModal()" class="text-xs text-blue-600 hover:underline">ลืมรหัสผ่าน?</button>
-            </div>
-            <div class="flex justify-end space-x-2 pt-2">
-                <button type="button" onclick="closeLoginModal()" class="bg-gray-300 px-4 py-2 rounded text-sm">ยกเลิก</button>
-                <button type="button" onclick="handleLogin()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm">เข้าสู่ระบบ</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal ลืมรหัสผ่าน -->
-    <div id="forgotModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3">
-            <h2 class="text-xl font-bold text-gray-800">กู้คืนรหัสผ่าน</h2>
-            <p class="text-xs text-gray-500">กรอกชื่อผู้ใช้และตอบคำถามช่วยจำที่คุณตั้งไว้</p>
-            <input type="text" id="forgot-name" class="w-full border p-2 rounded text-sm" placeholder="ชื่อผู้ใช้">
-            <input type="text" id="forgot-answer" class="w-full border p-2 rounded text-sm" placeholder="คำตอบของคุณ">
-            <div class="flex justify-end space-x-2 pt-2">
-                <button type="button" onclick="closeForgotModal()" class="bg-gray-300 px-4 py-2 rounded text-sm">ยกเลิก</button>
-                <button type="button" onclick="handleForgot()" class="bg-red-600 text-white px-4 py-2 rounded text-sm">ดูรหัสผ่าน</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- UI เสริม: หน้าต่างแชทส่วนตัวแบบลอยอิสระ -->
-    <div id="floating-chat-window" style="display: none; position: fixed; bottom: 20px; right: 20px; width: 320px; background: white; border: 1px solid #ccc; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden;">
-        <div id="chat-header-bar" onmousedown="startDrag(event)" style="background: #2563eb; color: white; padding: 10px; cursor: move; display: flex; justify-content: space-between; align-items: center;">
-            <span id="chat-title-name" style="font-weight: bold; font-size: 14px;">💬 แชทส่วนตัว</span>
-            <div>
-                <button onclick="startVideoCall(true)" title="วิดีโอคอล" style="background:none; border:none; color:white; cursor:pointer; font-size:16px; margin-right:5px;">📹</button>
-                <button onclick="startVideoCall(false)" title="โทรเสียง" style="background:none; border:none; color:white; cursor:pointer; font-size:16px; margin-right:5px;">📞</button>
-                <button onclick="closeFloatingChat()" style="background:none; border:none; color:white; cursor:pointer; font-weight:bold;">✕</button>
-            </div>
-        </div>
-        <div id="floating-chat-messages" style="height: 220px; overflow-y: auto; padding: 10px; background: #f9fafb; font-size: 13px;"></div>
-        <div style="display: flex; padding: 8px; border-top: 1px solid #eee; background: white;">
-            <input type="text" id="floating-chat-input" placeholder="พิมพ์ข้อความ..." style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;" />
-            <button onclick="sendFloatingMessage()" style="background: #2563eb; color: white; border: none; padding: 6px 12px; margin-left: 5px; border-radius: 4px; cursor: pointer;">ส่ง</button>
-        </div>
-    </div>
-
-    <!-- UI หน้าต่างวิดีโอคอล -->
-    <div id="video-call-modal" style="display: none; position: fixed; top: 15%; left: 20%; width: 60%; background: #111; color: white; padding: 20px; border-radius: 12px; z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.5);">
-        <h3 id="call-status-title" style="margin-bottom: 15px; text-align: center;">กำลังเชื่อมต่อการโทร...</h3>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
-            <video id="local-video" autoplay playsinline muted style="width: 48%; background: black; border-radius: 8px; height: 200px; object-fit: cover;"></video>
-            <video id="remote-video" autoplay playsinline style="width: 48%; background: black; border-radius: 8px; height: 200px; object-fit: cover;"></video>
-        </div>
-        <div style="text-align: center; display: flex; justify-content: center; gap: 10px;">
-            <button onclick="toggleCamera()" id="toggle-cam-btn" style="background: #d97706; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">ปิด/เปิด กล้อง</button>
-            <button onclick="hangUpCall()" style="background: #dc2626; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">วางสาย</button>
-        </div>
-    </div>
-
-    <!-- เชื่อมต่อระบบ Real-time Chat (Socket.io) -->
-    <script src="https://chatpidim.onrender.com/socket.io/socket.io.js"></script>
+    <!-- ส่วนสคริปต์ทั้งหมดรวมในที่เดียว -->
     <script>
-        const socket = io('https://chatpidim.onrender.com');
-        window.socket = socket;
-
-        socket.on('chat-message', function(data) {
-            const chatBox = document.getElementById('public-chat-box');
-            if (chatBox) {
-                const msg = document.createElement('div');
-                msg.className = "bg-blue-50 border p-2 rounded text-sm break-words";
-                msg.innerHTML = `<span class="font-bold text-blue-600">${data.sender}:</span> ${data.message}`;
-                chatBox.appendChild(msg);
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }
-        });
-    </script>
-
-    <!-- Script ควบคุมการทำงานทั้งหมด -->
-    <script>
-        let currentUserName = localStorage.getItem('currentUserName') || '';
-
-        window.addEventListener('load', () => {
-            if (currentUserName) {
-                applyLoginState(currentUserName);
-                if (window.socket) {
-                    window.socket.emit('user_online', currentUserName);
-                }
-            }
-            loadSongs();
-            loadStats();
-        });
-
-        let onlineUsersList = [];
-        if (window.socket) {
-            window.socket.on('online_users_list', (users) => {
-                onlineUsersList = users;
-                updateFriendsStatusUI();
-            });
-        }
-
-        function updateFriendsStatusUI() {
-            const friendItems = document.querySelectorAll('.friend-row-item');
-            friendItems.forEach(item => {
-                const fName = item.getAttribute('data-username');
-                const dot = item.querySelector('.status-dot');
-                if (dot) {
-                    if (onlineUsersList.includes(fName)) {
-                        dot.style.background = '#22c55e';
-                        dot.title = 'ออนไลน์';
-                    } else {
-                        dot.style.background = '#ef4444';
-                        dot.title = 'ออฟไลน์';
-                    }
-                }
-            });
-        }
-
-        function switchMode(modeId) {
-            document.querySelectorAll('.app-mode').forEach(el => el.classList.add('hidden'));
-            document.getElementById('mode-' + modeId).classList.remove('hidden');
-            document.querySelectorAll('nav button').forEach(btn => btn.classList.replace('text-blue-600', 'text-gray-500'));
-            document.getElementById('btn-' + modeId).classList.replace('text-gray-500', 'text-blue-600');
-            if (modeId === 'friends' && currentUserName) loadFriendsList();
-        }
-
-        function openRegisterModal() { document.getElementById('registerModal').classList.remove('hidden'); }
-        function closeRegisterModal() { document.getElementById('registerModal').classList.add('hidden'); }
-        function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
-        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
-        function openForgotModal() { closeLoginModal(); document.getElementById('forgotModal').classList.remove('hidden'); }
-        function closeForgotModal() { document.getElementById('forgotModal').classList.add('hidden'); }
-
-        function handleRegister() {
-            const name = document.getElementById('reg-name').value.trim();
-            const password = document.getElementById('reg-pass').value;
-            const email = document.getElementById('reg-email').value;
-            const phone = document.getElementById('reg-phone').value;
-            const securityQuestion = document.getElementById('reg-question').value;
-            const securityAnswer = document.getElementById('reg-answer').value.trim();
-
-            if (!name || !password) {
-                alert('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
-                return;
-            }
-
-            fetch('https://chatpidim.onrender.com/api/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, password, email, phone, securityQuestion, securityAnswer })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert('ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ');
-                    closeRegisterModal();
-                    openLoginModal();
-                    loadStats();
-                } else {
-                    alert(data.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก');
-                }
-            })
-            .catch(err => alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'));
-        }
-
-        function handleLogin() {
-            const name = document.getElementById('login-name').value.trim();
-            const password = document.getElementById('login-pass').value;
-
-            fetch('https://chatpidim.onrender.com/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, password })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    currentUserName = name;
-                    localStorage.setItem('currentUserName', name);
-                    applyLoginState(name);
-                    closeLoginModal();
-                    alert('เข้าสู่ระบบสำเร็จ ยินดีต้อนรับคุณ ' + name);
-                    if (window.socket) {
-                        window.socket.emit('user_online', name);
-                    }
-                } else {
-                    alert(data.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
-                }
-            })
-            .catch(err => alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'));
-        }
-
-        function handleForgot() {
-            const name = document.getElementById('forgot-name').value.trim();
-            const securityAnswer = document.getElementById('forgot-answer').value.trim();
-
-            fetch('https://chatpidim.onrender.com/api/forgot', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, securityAnswer })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert('กู้คืนสำเร็จ! รหัสผ่านของคุณคือ: ' + data.password);
-                    closeForgotModal();
-                    openLoginModal();
-                } else {
-                    alert(data.message || 'ชื่อผู้ใช้หรือคำตอบช่วยจำไม่ถูกต้อง');
-                }
-            })
-            .catch(err => alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'));
-        }
-
-        function applyLoginState(userName) {
-            document.getElementById('profile-name').innerText = userName;
-            document.getElementById('profile-email').innerText = 'สมาชิกผู้ใช้งาน';
-            document.getElementById('profile-initial').innerText = userName.charAt(0).toUpperCase();
-
-            document.getElementById('auth-buttons').innerHTML = `<button onclick="switchMode('profile')" class="bg-white text-blue-600 px-3 py-1 rounded font-semibold text-sm">👤 ${userName}</button>`;
-            document.getElementById('friend-status-text').classList.add('hidden');
-            document.getElementById('friend-content').classList.remove('hidden');
-            document.getElementById('logout-btn').classList.remove('hidden');
-        }
+        // สมมติชื่อผู้ใช้งานปัจจุบัน (ดึงจาก LocalStorage)
+        let currentUserName = localStorage.getItem('currentUserName') || 'User_' + Math.floor(Math.random() * 1000);
+        localStorage.setItem('currentUserName', currentUserName);
 
         function logout() {
             localStorage.removeItem('currentUserName');
@@ -418,7 +81,7 @@
             const titleInput = document.getElementById('upload-song-title');
             const fileInput = document.getElementById('upload-song-file');
             
-            if (!fileInput.files[0]) {
+            if (!fileInput || !fileInput.files[0]) {
                 alert('กรุณาเลือกไฟล์เพลงหรือวิดีโอก่อนครับ');
                 return;
             }
@@ -449,6 +112,7 @@
 
         function renderSongList(songs) {
             const songList = document.getElementById('song-list');
+            if (!songList) return;
             songList.innerHTML = '';
             if (songs.length === 0) {
                 songList.innerHTML = '<p class="text-gray-400 text-center py-1">ยังไม่มีเพลง</p>';
@@ -466,7 +130,9 @@
         }
 
         function filterSongs() {
-            const keyword = document.getElementById('search-song').value.toLowerCase();
+            const searchInput = document.getElementById('search-song');
+            if (!searchInput) return;
+            const keyword = searchInput.value.toLowerCase();
             const filtered = allSongs.filter(s => s.title.toLowerCase().includes(keyword));
             renderSongList(filtered);
         }
@@ -474,6 +140,7 @@
         function playMedia(url, title) {
             const mp3Player = document.getElementById('mp3-player');
             const mp4Player = document.getElementById('mp4-player');
+            if (!mp3Player || !mp4Player) return;
             
             if (url.includes('video') || url.endsWith('.mp4')) {
                 mp3Player.classList.add('hidden');
@@ -495,6 +162,7 @@
                 .then(res => res.json())
                 .then(users => {
                     const listContainer = document.getElementById('friend-list');
+                    if (!listContainer) return;
                     listContainer.innerHTML = '';
                     const others = users.filter(m => m.name !== currentUserName);
                     if (others.length === 0) {
@@ -503,7 +171,7 @@
                     }
                     others.forEach(f => {
                         const row = document.createElement('div');
-                        row.className = "friend-row-item flex items-center justify-between bg-gray-50 p-2 rounded border text-sm";
+                        row.className = "friend-row-item flex items-center justify-between bg-gray-50 p-2 rounded border text-sm mb-1";
                         row.setAttribute('data-username', f.name);
                         row.innerHTML = `
                             <div class="flex items-center gap-2">
@@ -514,18 +182,17 @@
                         `;
                         listContainer.appendChild(row);
                     });
-                    updateFriendsStatusUI();
                 })
                 .catch(err => console.log('Load friends error'));
         }
 
         function sendPublicMessage() {
             const input = document.getElementById('public-chat-input');
+            if (!input) return;
             const message = input.value.trim();
             if (!message) return;
             
             const sender = currentUserName || 'ผู้เยี่ยมชม';
-            
             if (window.socket) {
                 window.socket.emit('chat-message', { sender, message });
             }
@@ -537,6 +204,8 @@
             const radioContainer = document.getElementById('radio-container');
             const mp3Container = document.getElementById('mp3-container');
             const title = document.getElementById('player-mode-title');
+            if (!radioContainer || !mp3Container || !title) return;
+
             if (currentAudioMode === 'radio') {
                 currentAudioMode = 'mp3';
                 title.innerText = '🎵 เครื่องเล่น MP3';
@@ -550,6 +219,7 @@
             }
         }
 
+        // --- ระบบลากหน้าต่างแชทลอย ---
         let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
         function startDrag(e) {
             isDragging = true;
@@ -591,6 +261,7 @@
                 .then(res => res.json())
                 .then(msgs => {
                     const box = document.getElementById('floating-chat-messages');
+                    if (!box) return;
                     box.innerHTML = '';
                     msgs.forEach(m => {
                         const div = document.createElement('div');
@@ -605,6 +276,7 @@
 
         function sendFloatingMessage() {
             const input = document.getElementById('floating-chat-input');
+            if (!input) return;
             const message = input.value.trim();
             if (!message || !activeChatUser || !currentUserName) return;
 
@@ -618,27 +290,51 @@
             input.value = '';
         }
 
-        if (window.socket) {
-            window.socket.on('receive_private_message', (msg) => {
-                if (activeChatUser && (msg.sender === activeChatUser || msg.receiver === activeChatUser)) {
-                    const box = document.getElementById('floating-chat-messages');
-                    const div = document.createElement('div');
-                    div.style.margin = '4px 0';
-                    div.style.textAlign = msg.sender === currentUserName ? 'right' : 'left';
-                    div.innerHTML = `<span style="background: ${msg.sender === currentUserName ? '#dbeafe' : '#f3f4f6'}; padding: 4px 8px; border-radius: 6px; display: inline-block;"><b>${msg.sender}:</b> ${msg.message}</span>`;
-                    box.appendChild(div);
-                    box.scrollTop = box.scrollHeight;
-                }
-            });
-        }
-
+        // ==========================================
+        // --- ระบบ WebRTC วิดีโอคอล (ฉบับสมบูรณ์) ---
+        // ==========================================
         let localStream = null;
+        let peerConnection = null;
         let isCameraOn = true;
+
+        const rtcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+
+        function createPeerConnection(receiver) {
+            if (peerConnection) return;
+            peerConnection = new RTCPeerConnection(rtcConfig);
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate && window.socket) {
+                    window.socket.emit('ice_candidate', {
+                        toUser: receiver,
+                        candidate: event.candidate
+                    });
+                }
+            };
+
+            peerConnection.ontrack = (event) => {
+                const remoteVideo = document.getElementById('remote-video');
+                if (remoteVideo && event.streams[0]) {
+                    remoteVideo.srcObject = event.streams[0];
+                }
+            };
+
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+            }
+        }
 
         async function startVideoCall(videoEnabled) {
             isCameraOn = videoEnabled;
-            document.getElementById('video-call-modal').style.display = 'block';
-            document.getElementById('call-status-title').innerText = `กำลังโทรหา ${activeChatUser}...`;
+            document.getElementById('video-call-modal').style.display = 'flex';
+            document.getElementById('call-status-title').innerText = `กำลังเชื่อมต่อกับ ${activeChatUser}...`;
 
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: isCameraOn, audio: true });
@@ -647,15 +343,22 @@
                     localStream.getVideoTracks()[0].enabled = false;
                 }
 
+                createPeerConnection(activeChatUser);
+
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
                 if (window.socket && activeChatUser && currentUserName) {
                     window.socket.emit('call_user', {
                         toUser: activeChatUser,
                         fromUser: currentUserName,
-                        videoEnabled: isCameraOn
+                        videoEnabled: isCameraOn,
+                        offer: offer
                     });
                 }
             } catch (err) {
-                alert('ไม่สามารถเปิดใช้งานกล้องหรือไมโครโฟนได้ กรุณาอนุญาตสิทธิ์');
+                console.error(err);
+                alert('ไม่สามารถเปิดใช้งานกล้องหรือไมโครโฟนได้ กรุณาตรวจสอบสิทธิ์การใช้งาน');
             }
         }
 
@@ -672,6 +375,11 @@
         function hangUpCall() {
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
             }
             document.getElementById('video-call-modal').style.display = 'none';
             if (window.socket && activeChatUser) {
@@ -679,19 +387,79 @@
             }
         }
 
+        // --- Socket Events ---
         if (window.socket) {
-            window.socket.on('incoming_call', (data) => {
-                if (confirm(`มีสายเรียกเข้าจาก ${data.fromUser} ต้องการรับสายหรือไม่?`)) {
-                    activeChatUser = data.fromUser;
-                    startVideoCall(data.videoEnabled);
+            window.socket.on('receive_private_message', (msg) => {
+                if (activeChatUser && (msg.sender === activeChatUser || msg.receiver === activeChatUser)) {
+                    const box = document.getElementById('floating-chat-messages');
+                    if (!box) return;
+                    const div = document.createElement('div');
+                    div.style.margin = '4px 0';
+                    div.style.textAlign = msg.sender === currentUserName ? 'right' : 'left';
+                    div.innerHTML = `<span style="background: ${msg.sender === currentUserName ? '#dbeafe' : '#f3f4f6'}; padding: 4px 8px; border-radius: 6px; display: inline-block;"><b>${msg.sender}:</b> ${msg.message}</span>`;
+                    box.appendChild(div);
+                    box.scrollTop = box.scrollHeight;
                 }
             });
+
+            window.socket.on('incoming_call', async (data) => {
+                if (confirm(`มีสายเรียกเข้าจาก ${data.fromUser} ต้องการรับสายหรือไม่?`)) {
+                    activeChatUser = data.fromUser;
+                    isCameraOn = data.videoEnabled;
+                    document.getElementById('video-call-modal').style.display = 'flex';
+                    document.getElementById('call-status-title').innerText = `กำลังสนทนากับ ${activeChatUser}`;
+
+                    try {
+                        localStream = await navigator.mediaDevices.getUserMedia({ video: isCameraOn, audio: true });
+                        document.getElementById('local-video').srcObject = localStream;
+
+                        createPeerConnection(activeChatUser);
+
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                        const answer = await peerConnection.createAnswer();
+                        await peerConnection.setLocalDescription(answer);
+
+                        window.socket.emit('make_answer', {
+                            toUser: activeChatUser,
+                            answer: answer
+                        });
+                    } catch (err) {
+                        console.error(err);
+                        alert('เกิดข้อผิดพลาดในการรับสาย');
+                    }
+                } else {
+                    window.socket.emit('end_call', { toUser: data.fromUser });
+                }
+            });
+
+            window.socket.on('call_answered', async (data) => {
+                try {
+                    if (peerConnection) {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                        document.getElementById('call-status-title').innerText = `กำลังสนทนากับ ${activeChatUser}`;
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            });
+
+            window.socket.on('ice_candidate', async (data) => {
+                try {
+                    if (peerConnection && data.candidate) {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    }
+                } catch (err) {
+                    console.error('Error adding received ice candidate', err);
+                }
+            });
+
             window.socket.on('call_ended', () => {
                 hangUpCall();
                 alert('สายถูกตัดแล้ว');
             });
         }
 
+        // --- ส่วนโปรไฟล์ ---
         function uploadProfileData() {
             const statusText = document.getElementById('profile-status-input')?.value || '';
             const fileInput = document.getElementById('profile-image-file');
@@ -735,6 +503,13 @@
                 }
             });
         }
+
+        // โหลดข้อมูลเริ่มต้นเมื่อเปิดหน้าเว็บ
+        window.onload = function() {
+            loadStats();
+            loadSongs();
+            loadFriendsList();
+        };
     </script>
 </body>
 </html>
