@@ -54,11 +54,24 @@
         </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- เพิ่มสคริปต์ Socket.io เข้ามาเชื่อมต่อระบบ Real-time ตรงนี้ -->
+    <!-- ========================================== -->
+    <script src="https://chatpidim.onrender.com/socket.io/socket.io.js"></script>
+
     <!-- ส่วนสคริปต์ทั้งหมดรวมในที่เดียว -->
     <script>
+        // --- 1. เชื่อมต่อ Socket.io กับเซิร์ฟเวอร์ ---
+        window.socket = io('https://chatpidim.onrender.com');
+
         // สมมติชื่อผู้ใช้งานปัจจุบัน (ดึงจาก LocalStorage)
         let currentUserName = localStorage.getItem('currentUserName') || 'User_' + Math.floor(Math.random() * 1000);
         localStorage.setItem('currentUserName', currentUserName);
+
+        // --- 2. ส่งข้อมูลแจ้งเซิร์ฟเวอร์ว่าผู้ใช้คนนี้ออนไลน์เมื่อเชื่อมต่อสำเร็จ ---
+        window.socket.on('connect', () => {
+            window.socket.emit('user_online', currentUserName);
+        });
 
         function logout() {
             localStorage.removeItem('currentUserName');
