@@ -194,6 +194,7 @@
                 applyLoginState(currentUserName);
             }
             loadSongs();
+            loadStats();
         });
 
         function switchMode(modeId) {
@@ -212,65 +213,81 @@
         function closeForgotModal() { document.getElementById('forgotModal').classList.add('hidden'); }
 
         function handleRegister() {
-            const name = document.getElementById('reg-name').value;
+            const name = document.getElementById('reg-name').value.trim();
             const password = document.getElementById('reg-pass').value;
             const email = document.getElementById('reg-email').value;
             const phone = document.getElementById('reg-phone').value;
             const securityQuestion = document.getElementById('reg-question').value;
-            const securityAnswer = document.getElementById('reg-answer').value;
+            const securityAnswer = document.getElementById('reg-answer').value.trim();
 
             if (!name || !password) {
                 alert('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
                 return;
             }
 
-            let users = JSON.parse(localStorage.getItem('chatpidim_users') || '[]');
-            if (users.some(u => u.name === name)) {
-                alert('ชื่อผู้ใช้นี้มีคนสมัครไปแล้วครับ');
-                return;
-            }
-
-            users.push({ name, password, email, phone, securityQuestion, securityAnswer });
-            localStorage.setItem('chatpidim_users', JSON.stringify(users));
-            
-            document.getElementById('stat-total-members').innerText = users.length;
-            alert('ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ');
-            closeRegisterModal();
-            openLoginModal();
+            fetch('https://chatpidim.onrender.com/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, password, email, phone, securityQuestion, securityAnswer })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ');
+                    closeRegisterModal();
+                    openLoginModal();
+                    loadStats();
+                } else {
+                    alert(data.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก');
+                }
+            })
+            .catch(err => alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'));
         }
 
         function handleLogin() {
-            const name = document.getElementById('login-name').value;
+            const name = document.getElementById('login-name').value.trim();
             const password = document.getElementById('login-pass').value;
 
-            let users = JSON.parse(localStorage.getItem('chatpidim_users') || '[]');
-            const found = users.find(u => u.name === name && u.password === password);
-
-            if (found) {
-                currentUserName = found.name;
-                localStorage.setItem('currentUserName', currentUserName);
-                applyLoginState(currentUserName);
-                alert('เข้าสู่ระบบสำเร็จ ยินดีต้อนรับคุณ ' + currentUserName);
-                closeLoginModal();
-            } else {
-                alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
-            }
+            fetch('https://chatpidim.onrender.com/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    currentUserName = name;
+                    localStorage.setItem('currentUserName', name);
+                    applyLoginState(name);
+                    closeLoginModal();
+                    alert('เข้าสู่ระบบสำเร็จ ยินดีต้อนรับคุณ ' + name);
+                } else {
+                    alert(data.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+                }
+            })
+            .catch(err => alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'));
         }
 
         function handleForgot() {
-            const name = document.getElementById('forgot-name').value;
-            const securityAnswer = document.getElementById('forgot-answer').value;
+            const name = document.getElementById('forgot-name').value.trim();
+            const securityAnswer = document.getElementById('forgot-answer').value.trim();
 
-            let users = JSON.parse(localStorage.getItem('chatpidim_users') || '[]');
-            const found = users.find(u => u.name === name && u.securityAnswer === securityAnswer);
-
-            if (found) {
-                alert('กู้คืนสำเร็จ! รหัสผ่านของคุณคือ: ' + found.password);
-                closeForgotModal();
-                openLoginModal();
-            } else {
-                alert('ชื่อผู้ใช้หรือคำตอบช่วยจำไม่ถูกต้อง');
-            }
+            fetch('https://chatpidim.onrender.com/api/forgot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, securityAnswer })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('กู้คืนสำเร็จ! รหัสผ่านของคุณคือ: ' + data.password);
+                    closeForgotModal();
+                    openLoginModal();
+                } else {
+                    alert(data.message || 'ชื่อผู้ใช้หรือคำตอบช่วยจำไม่ถูกต้อง');
+                }
+            })
+            .catch(err => alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'));
         }
 
         function applyLoginState(userName) {
@@ -288,6 +305,17 @@
             localStorage.removeItem('currentUserName');
             alert('ออกจากระบบเรียบร้อยแล้ว');
             location.reload();
+        }
+
+        function loadStats() {
+            fetch('https://chatpidim.onrender.com/api/stats')
+                .then(res => res.json())
+                .then(data => {
+                    if(data.totalMembers !== undefined) {
+                        document.getElementById('stat-total-members').innerText = data.totalMembers;
+                    }
+                })
+                .catch(err => console.log('Load stats error'));
         }
 
         function uploadSong() {
@@ -320,9 +348,7 @@
         function loadSongs() {
             allSongs = JSON.parse(localStorage.getItem('chatpidim_songs') || '[]');
             renderSongList(allSongs);
-            
-            let users = JSON.parse(localStorage.getItem('chatpidim_users') || '[]');
-            document.getElementById('stat-total-members').innerText = users.length;
+            loadStats();
         }
 
         function renderSongList(songs) {
@@ -369,32 +395,37 @@
         }
 
         function loadFriendsList() {
-            let users = JSON.parse(localStorage.getItem('chatpidim_users') || '[]');
-            const listContainer = document.getElementById('friend-list');
-            listContainer.innerHTML = '';
-            const others = users.filter(m => m.name !== currentUserName);
-            if (others.length === 0) {
-                listContainer.innerHTML = '<p class="text-gray-400 text-sm">ยังไม่มีสมาชิกอื่น</p>';
-                return;
-            }
-            others.forEach(f => {
-                const row = document.createElement('div');
-                row.className = "flex items-center justify-between bg-gray-50 p-2 rounded border text-sm";
-                row.innerHTML = `<span class="font-medium text-gray-700">${f.name}</span>`;
-                listContainer.appendChild(row);
-            });
+            fetch('https://chatpidim.onrender.com/api/users')
+                .then(res => res.json())
+                .then(users => {
+                    const listContainer = document.getElementById('friend-list');
+                    listContainer.innerHTML = '';
+                    const others = users.filter(m => m.name !== currentUserName);
+                    if (others.length === 0) {
+                        listContainer.innerHTML = '<p class="text-gray-400 text-sm">ยังไม่มีสมาชิกอื่น</p>';
+                        return;
+                    }
+                    others.forEach(f => {
+                        const row = document.createElement('div');
+                        row.className = "flex items-center justify-between bg-gray-50 p-2 rounded border text-sm";
+                        row.innerHTML = `<span class="font-medium text-gray-700">${f.name}</span>`;
+                        listContainer.appendChild(row);
+                    });
+                })
+                .catch(err => console.log('Load friends error'));
         }
 
         function sendPublicMessage() {
             const input = document.getElementById('public-chat-input');
-            if (!input.value.trim()) return;
-            const chatBox = document.getElementById('public-chat-box');
-            const msg = document.createElement('div');
-            msg.className = "bg-blue-50 border p-2 rounded text-sm";
-            msg.innerHTML = `<span class="font-bold text-blue-600">${currentUserName || 'ผู้เยี่ยมชม'}:</span> ${input.value}`;
-            chatBox.appendChild(msg);
+            const message = input.value.trim();
+            if (!message) return;
+            
+            const sender = currentUserName || 'ผู้เยี่ยมชม';
+            
+            if (window.socket) {
+                window.socket.emit('chat-message', { sender, message });
+            }
             input.value = '';
-            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         let currentAudioMode = 'radio';
@@ -414,6 +445,22 @@
                 radioContainer.classList.remove('hidden');
             }
         }
+    </script>
+
+    <!-- เชื่อมต่อระบบ Real-time Chat (Socket.io) กับ Render -->
+    <script src="https://chatpidim.onrender.com/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io('https://chatpidim.onrender.com');
+        window.socket = socket;
+
+        socket.on('chat-message', function(data) {
+            const chatBox = document.getElementById('public-chat-box');
+            const msg = document.createElement('div');
+            msg.className = "bg-blue-50 border p-2 rounded text-sm break-words";
+            msg.innerHTML = `<span class="font-bold text-blue-600">${data.sender}:</span> ${data.message}`;
+            chatBox.appendChild(msg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
     </script>
 </body>
 </html>
