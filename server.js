@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const path = require('path'); // 1. เรียกใช้งาน path โมดูลสำหรับจัดการเส้นทางไฟล์
 
 const app = express();
 app.use(cors());
@@ -19,6 +20,11 @@ let users = [];
 let privateMessages = []; 
 let totalViews = 1;
 let onlineUsers = new Set();
+
+// 2. เพิ่ม Route สำหรับเสิร์ฟไฟล์ index.html เมื่อเปิดหน้าแรก
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 app.get('/api/stats', (req, res) => {
     res.json({
