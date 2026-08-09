@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ยินดีต้อนรับแชทพี่ดิม ChatPidim</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans pb-20">
 
@@ -72,23 +71,18 @@
             </div>
         </section>
 
-        <!-- 2. หน้าแชทสาธารณะ -->
+        <!-- 2. หน้าแชท -->
         <section id="mode-chat" class="app-mode hidden space-y-4">
             <div class="bg-white p-4 rounded-lg shadow">
                 <h2 class="text-lg font-bold text-gray-800">💬 แชทสาธารณะ & บอร์ดระบายความรู้สึก</h2>
-                <p class="text-xs text-gray-500 mt-1">บุคคลทั่วไปสามารถอ่านและดูสื่อได้ แต่ต้องสมัครสมาชิกเพื่อร่วมพิมพ์ข้อความและแชร์รูป/วิดีโอ</p>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow h-96 flex flex-col justify-between">
-                <div id="public-chat-box" class="overflow-y-auto space-y-3 text-sm flex-1 pr-2 mb-2">
-                    <div class="bg-gray-100 p-2 rounded w-max">ยินดีต้อนรับสู่แชทสาธารณะ ทักทายและแชร์เรื่องราวกันได้เลยครับ</div>
+            <div class="bg-white p-4 rounded-lg shadow h-64 flex flex-col justify-between">
+                <div id="public-chat-box" class="overflow-y-auto space-y-2 text-sm flex-1 pr-2">
+                    <div class="bg-gray-100 p-2 rounded w-max">ยินดีต้อนรับสู่แชทสาธารณะ ทักทายกันได้เลยครับ</div>
                 </div>
-                <div class="border-t pt-2 space-y-2">
-                    <input type="text" id="public-chat-input" placeholder="พิมพ์ข้อความระบาย..." class="border w-full p-2 rounded text-sm" onkeydown="if(event.key==='Enter') sendPublicMessage()">
-                    <div class="flex space-x-2">
-                        <input type="file" id="media-upload" accept="image/*,video/*" class="hidden" onchange="handleMediaUpload(this)">
-                        <button onclick="triggerMediaUpload()" class="bg-purple-500 text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-purple-600">📎 แนบรูป/วิดีโอ</button>
-                        <button onclick="sendPublicMessage()" class="bg-blue-600 text-white flex-1 py-1.5 rounded text-sm font-semibold hover:bg-blue-700">ส่งข้อความ</button>
-                    </div>
+                <div class="flex mt-2 pt-2 border-t">
+                    <input type="text" id="public-chat-input" placeholder="พิมพ์ข้อความ..." class="border flex-1 p-2 rounded-l text-sm">
+                    <button onclick="sendPublicMessage()" class="bg-blue-600 text-white px-4 rounded-r text-sm">ส่ง</button>
                 </div>
             </div>
         </section>
@@ -97,7 +91,7 @@
         <section id="mode-friends" class="app-mode hidden space-y-4 max-w-md mx-auto">
             <div class="bg-white p-4 rounded-lg shadow">
                 <h2 class="text-lg font-bold text-gray-800 mb-2">👥 เพื่อนและการติดตาม</h2>
-                <p class="text-gray-500 text-sm mb-4" id="friend-status-text">กรุณาเข้าสู่ระบบเพื่อดูรายชื่อเพื่อนและกดติดตาม</p>
+                <p class="text-gray-500 text-sm mb-4" id="friend-status-text">กรุณาเข้าสู่ระบบเพื่อดูรายชื่อเพื่อน</p>
                 <div id="friend-content" class="hidden space-y-3">
                     <div id="friend-list" class="space-y-3"></div>
                 </div>
@@ -120,7 +114,7 @@
             <div class="bg-white p-4 rounded-lg shadow space-y-4">
                 <h2 class="text-lg font-bold text-gray-800 mb-2">⚙️ ตั้งค่า</h2>
                 <ul class="divide-y text-sm text-gray-700">
-                    <li class="py-3 flex justify-between items-center"><span>เสียงแจ้งเตือน (ติ๊ง!)</span><input type="checkbox" id="setting-sound" checked class="w-4 h-4"></li>
+                    <li class="py-3 flex justify-between items-center"><span>เสียงแจ้งเตือน</span><input type="checkbox" checked class="w-4 h-4"></li>
                     <li class="py-3 flex justify-between items-center"><span>โหมดมืด</span><input type="checkbox" class="w-4 h-4"></li>
                 </ul>
                 <button id="logout-btn" onclick="logout()" class="hidden w-full bg-red-600 text-white py-2 rounded font-semibold text-sm hover:bg-red-700">ออกจากระบบ</button>
@@ -130,57 +124,15 @@
     </main>
 
     <!-- เมนูด้านล่าง -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 shadow-lg z-40">
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 shadow-lg z-45">
         <button onclick="switchMode('home')" id="btn-home" class="text-blue-600 font-medium text-xs flex flex-col items-center">🏠 หน้าหลัก</button>
         <button onclick="switchMode('chat')" id="btn-chat" class="text-gray-500 font-medium text-xs flex flex-col items-center">💬 แชท</button>
-        <button onclick="switchMode('friends')" id="btn-friends" class="text-gray-500 font-medium text-xs flex flex-col items-center relative">
-            👥 เพื่อน
-            <span id="friend-unread-badge" class="absolute top-0 right-2 bg-red-500 text-white text-[10px] rounded-full px-1.5 hidden">0</span>
-        </button>
+        <button onclick="switchMode('friends')" id="btn-friends" class="text-gray-500 font-medium text-xs flex flex-col items-center">👥 เพื่อน</button>
         <button onclick="switchMode('profile')" id="btn-profile" class="text-gray-500 font-medium text-xs flex flex-col items-center">👤 โปรไฟล์</button>
         <button onclick="switchMode('settings')" id="btn-settings" class="text-gray-500 font-medium text-xs flex flex-col items-center">⚙️ ตั้งค่า</button>
     </nav>
 
-    <!-- หน้าต่างแชทส่วนตัวลอย (สามารถลากย้ายตำแหน่งซ้าย-ขวาได้ และลอยอยู่ตลอดเวลา) -->
-    <div id="private-chat-modal" class="fixed bottom-20 right-4 w-80 bg-white rounded-lg shadow-2xl border hidden flex flex-col z-50 overflow-hidden cursor-move" onmousedown="startDrag(event)">
-        <div class="bg-blue-600 text-white p-3 flex justify-between items-center select-none">
-            <span id="private-chat-title" class="font-bold text-sm">💬 แชทส่วนตัว</span>
-            <div class="space-x-1" onmousedown="event.stopPropagation()">
-                <button onclick="toggleVideoCall()" class="bg-blue-700 px-2 py-1 rounded text-xs hover:bg-blue-800">📹 วิดีโอคอล</button>
-                <button onclick="closePrivateChat()" class="text-white font-bold px-1 hover:text-gray-200">✕</button>
-            </div>
-        </div>
-        
-        <div id="video-call-box" class="hidden bg-black p-2 relative flex justify-center items-center h-40">
-            <video id="local-video" autoplay playsinline muted class="w-full h-full object-cover rounded"></video>
-            <div class="absolute bottom-2 flex space-x-2">
-                <button onclick="toggleCam()" class="bg-gray-800 text-white p-1 rounded text-xs">📷 ปิดกล้อง</button>
-                <button onclick="endVideoCall()" class="bg-red-600 text-white p-1 rounded text-xs">❌ วางสาย</button>
-            </div>
-        </div>
-
-        <div id="private-chat-messages" class="p-3 h-48 overflow-y-auto space-y-2 text-xs bg-gray-50 cursor-default" onmousedown="event.stopPropagation()"></div>
-        <div class="p-2 border-t flex bg-white" onmousedown="event.stopPropagation()">
-            <input type="text" id="private-chat-input" placeholder="พิมพ์หาเพื่อน..." class="border flex-1 p-1.5 rounded-l text-xs" onkeydown="if(event.key==='Enter') sendPrivateMessage()">
-            <button onclick="sendPrivateMessage()" class="bg-blue-600 text-white px-3 rounded-r text-xs">ส่ง</button>
-        </div>
-    </div>
-
-    <!-- ปุ่มหัวแชทลอย (Floating Bubble) แสดงรายชื่อเพื่อนที่ทักมา หรือกดเพื่อเลือกแชทได้ทันทีจากทุกหน้า -->
-    <div id="floating-chat-bubble" class="fixed bottom-20 left-4 z-50 hidden">
-        <button onclick="toggleChatSelector()" class="bg-blue-600 text-white p-3 rounded-full shadow-2xl flex items-center space-x-2 hover:bg-blue-700 border-2 border-white relative">
-            <span class="text-lg">💬</span>
-            <span id="bubble-label" class="text-xs font-bold hidden md:inline">แชทเพื่อน</span>
-            <span id="bubble-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full px-1.5 font-bold hidden">0</span>
-        </button>
-        <!-- เมนูดรอปดาวน์เลือกเพื่อนที่จะแชทด้วย -->
-        <div id="chat-selector-menu" class="absolute bottom-14 left-0 bg-white border rounded-lg shadow-xl w-56 p-2 hidden space-y-1 text-xs">
-            <div class="font-bold text-gray-700 border-b pb-1 px-1">เลือกเพื่อนเพื่อแชท</div>
-            <div id="bubble-friend-list" class="max-h-40 overflow-y-auto space-y-1"></div>
-        </div>
-    </div>
-
-    <!-- Modals ต่างๆ -->
+    <!-- Modal ลงทะเบียน -->
     <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3">
             <h2 class="text-xl font-bold text-gray-800">ลงทะเบียนสมาชิก</h2>
@@ -204,6 +156,7 @@
         </div>
     </div>
 
+    <!-- Modal เข้าสู่ระบบ -->
     <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3">
             <h2 class="text-xl font-bold text-gray-800">เข้าสู่ระบบ</h2>
@@ -219,6 +172,7 @@
         </div>
     </div>
 
+    <!-- Modal ลืมรหัสผ่าน -->
     <div id="forgotModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3">
             <h2 class="text-xl font-bold text-gray-800">กู้คืนรหัสผ่าน</h2>
@@ -233,157 +187,15 @@
     </div>
 
     <script>
-        const socket = io('http://localhost:3000');
-
         let currentUserName = localStorage.getItem('currentUserName') || '';
-        let followingList = JSON.parse(localStorage.getItem('followingList') || '[]');
-        let activeChatFriend = '';
-        let unreadMessages = JSON.parse(localStorage.getItem('unreadMessages') || '{}');
 
         window.addEventListener('load', () => {
             if (currentUserName) {
                 applyLoginState(currentUserName);
-                updateTotalBadge();
             }
-            fetchStats();
             loadSongs();
-            setInterval(fetchStats, 5000);
-
-            fetch('http://localhost:3000/api/view-update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'join' })
-            });
         });
 
-        window.addEventListener('beforeunload', () => {
-            navigator.sendBeacon('http://localhost:3000/api/view-update', JSON.stringify({ action: 'leave' }));
-        });
-
-        // === DRAG AND MOVE CHAT WINDOW (ลากย้ายหน้าต่างซ้ายขวาได้อิสระ) ===
-        let isDragging = false, startX, startY, initialX, initialY;
-        function startDrag(e) {
-            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'VIDEO') return;
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            const modal = document.getElementById('private-chat-modal');
-            const rect = modal.getBoundingClientRect();
-            modal.style.left = rect.left + 'px';
-            modal.style.top = rect.top + 'px';
-            modal.style.right = 'auto';
-            modal.style.bottom = 'auto';
-            initialX = rect.left;
-            initialY = rect.top;
-            document.addEventListener('mousemove', onDrag);
-            document.addEventListener('mouseup', stopDrag);
-        }
-        function onDrag(e) {
-            if (!isDragging) return;
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            const modal = document.getElementById('private-chat-modal');
-            modal.style.left = (initialX + dx) + 'px';
-            modal.style.top = (initialY + dy) + 'px';
-        }
-        function stopDrag() {
-            isDragging = false;
-            document.removeEventListener('mousemove', onDrag);
-            document.removeEventListener('mouseup', stopDrag);
-        }
-
-        // === REAL-TIME CHAT LISTENERS ===
-        socket.on('receive_private_message', (data) => {
-            if (data.receiver === currentUserName || data.sender === currentUserName) {
-                if (activeChatFriend === data.sender || activeChatFriend === data.receiver) {
-                    const box = document.getElementById('private-chat-messages');
-                    const msg = document.createElement('div');
-                    
-                    if (data.sender === currentUserName) {
-                        msg.className = "bg-blue-100 p-1.5 rounded text-right";
-                        msg.innerHTML = `<span>${data.message}</span> <strong class="text-blue-700">:คุณ</strong>`;
-                    } else {
-                        msg.className = "bg-white p-1.5 rounded text-left border";
-                        msg.innerHTML = `<strong class="text-blue-600">${data.sender}:</strong> <span>${data.message}</span>`;
-                        playNotificationSound();
-                    }
-                    box.appendChild(msg);
-                    box.scrollTop = box.scrollHeight;
-                } else if (data.receiver === currentUserName) {
-                    playNotificationSound();
-                    unreadMessages[data.sender] = (unreadMessages[data.sender] || 0) + 1;
-                    localStorage.setItem('unreadMessages', JSON.stringify(unreadMessages));
-                    updateTotalBadge();
-                    if (currentUserName) updateBubbleFriendList();
-                }
-            }
-        });
-
-        socket.on('receive_public_message', (data) => {
-            const chatBox = document.getElementById('public-chat-box');
-            const msg = document.createElement('div');
-            
-            if (data.type === 'media') {
-                msg.className = "p-2 bg-gray-100 rounded border";
-                if (data.fileType.startsWith('image/')) {
-                    msg.innerHTML = `<span class="font-bold text-blue-600">${data.sender}:</span><br><img src="${data.url}" class="max-h-40 mt-1 rounded">`;
-                } else {
-                    msg.innerHTML = `<span class="font-bold text-blue-600">${data.sender}:</span><br><video src="${data.url}" controls class="max-h-40 mt-1 rounded"></video>`;
-                }
-            } else {
-                msg.className = "bg-blue-50 border p-2 rounded text-sm";
-                msg.innerHTML = `<span class="font-bold text-blue-600">${data.sender}:</span> ${data.message}`;
-            }
-            chatBox.appendChild(msg);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        });
-
-        function sendPrivateMessage() {
-            const input = document.getElementById('private-chat-input');
-            if (!input.value.trim() || !activeChatFriend) return;
-
-            socket.emit('send_private_message', {
-                sender: currentUserName,
-                receiver: activeChatFriend,
-                message: input.value.trim()
-            });
-            input.value = '';
-        }
-
-        function sendPublicMessage() {
-            if (!currentUserName) {
-                alert('แชทสาธารณะนี้อ่านได้ทุกคน แต่ต้องสมัครสมาชิกและเข้าสู่ระบบก่อนครับ');
-                openLoginModal();
-                return;
-            }
-            const input = document.getElementById('public-chat-input');
-            if (!input.value.trim()) return;
-
-            socket.emit('send_public_message', {
-                type: 'text',
-                sender: currentUserName,
-                message: input.value.trim()
-            });
-            input.value = '';
-        }
-
-        function handleMediaUpload(input) {
-            if (!currentUserName) return;
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    socket.emit('send_public_message', {
-                        type: 'media',
-                        sender: currentUserName,
-                        fileType: input.files[0].type,
-                        url: e.target.result
-                    });
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        // === UI & Auth Functions ===
         function switchMode(modeId) {
             document.querySelectorAll('.app-mode').forEach(el => el.classList.add('hidden'));
             document.getElementById('mode-' + modeId).classList.remove('hidden');
@@ -399,7 +211,7 @@
         function openForgotModal() { closeLoginModal(); document.getElementById('forgotModal').classList.remove('hidden'); }
         function closeForgotModal() { document.getElementById('forgotModal').classList.add('hidden'); }
 
-        async function handleRegister() {
+        function handleRegister() {
             const name = document.getElementById('reg-name').value;
             const password = document.getElementById('reg-pass').value;
             const email = document.getElementById('reg-email').value;
@@ -407,59 +219,58 @@
             const securityQuestion = document.getElementById('reg-question').value;
             const securityAnswer = document.getElementById('reg-answer').value;
 
-            try {
-                const res = await fetch('http://localhost:3000/api/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, password, email, phone, securityQuestion, securityAnswer })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert('ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ');
-                    closeRegisterModal();
-                    openLoginModal();
-                } else { alert(data.message); }
-            } catch (err) { alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'); }
+            if (!name || !password) {
+                alert('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
+                return;
+            }
+
+            let users = JSON.parse(localStorage.getItem('chatpidim_users') || '[]');
+            if (users.some(u => u.name === name)) {
+                alert('ชื่อผู้ใช้นี้มีคนสมัครไปแล้วครับ');
+                return;
+            }
+
+            users.push({ name, password, email, phone, securityQuestion, securityAnswer });
+            localStorage.setItem('chatpidim_users', JSON.stringify(users));
+            
+            document.getElementById('stat-total-members').innerText = users.length;
+            alert('ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ');
+            closeRegisterModal();
+            openLoginModal();
         }
 
-        async function handleLogin() {
+        function handleLogin() {
             const name = document.getElementById('login-name').value;
             const password = document.getElementById('login-pass').value;
 
-            try {
-                const res = await fetch('http://localhost:3000/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, password })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    currentUserName = data.user.name;
-                    localStorage.setItem('currentUserName', currentUserName);
-                    applyLoginState(currentUserName);
-                    alert('เข้าสู่ระบบสำเร็จ ยินดีต้อนรับคุณ ' + currentUserName);
-                    closeLoginModal();
-                } else { alert(data.message); }
-            } catch (err) { alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'); }
+            let users = JSON.parse(localStorage.getItem('chatpidim_users') || '[]');
+            const found = users.find(u => u.name === name && u.password === password);
+
+            if (found) {
+                currentUserName = found.name;
+                localStorage.setItem('currentUserName', currentUserName);
+                applyLoginState(currentUserName);
+                alert('เข้าสู่ระบบสำเร็จ ยินดีต้อนรับคุณ ' + currentUserName);
+                closeLoginModal();
+            } else {
+                alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+            }
         }
 
-        async function handleForgot() {
+        function handleForgot() {
             const name = document.getElementById('forgot-name').value;
             const securityAnswer = document.getElementById('forgot-answer').value;
 
-            try {
-                const res = await fetch('http://localhost:3000/api/forgot-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, securityAnswer })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert('กู้คืนสำเร็จ! รหัสผ่านของคุณคือ: ' + data.password);
-                    closeForgotModal();
-                    openLoginModal();
-                } else { alert(data.message); }
-            } catch (err) { alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'); }
+            let users = JSON.parse(localStorage.getItem('chatpidim_users') || '[]');
+            const found = users.find(u => u.name === name && u.securityAnswer === securityAnswer);
+
+            if (found) {
+                alert('กู้คืนสำเร็จ! รหัสผ่านของคุณคือ: ' + found.password);
+                closeForgotModal();
+                openLoginModal();
+            } else {
+                alert('ชื่อผู้ใช้หรือคำตอบช่วยจำไม่ถูกต้อง');
+            }
         }
 
         function applyLoginState(userName) {
@@ -471,31 +282,15 @@
             document.getElementById('friend-status-text').classList.add('hidden');
             document.getElementById('friend-content').classList.remove('hidden');
             document.getElementById('logout-btn').classList.remove('hidden');
-            document.getElementById('floating-chat-bubble').classList.remove('hidden');
-            updateBubbleFriendList();
         }
 
         function logout() {
             localStorage.removeItem('currentUserName');
-            localStorage.removeItem('followingList');
-            localStorage.removeItem('unreadMessages');
             alert('ออกจากระบบเรียบร้อยแล้ว');
             location.reload();
         }
 
-        async function fetchStats() {
-            try {
-                const res = await fetch('http://localhost:3000/api/stats');
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('stat-current-viewers').innerText = data.currentViewers;
-                    document.getElementById('stat-total-members').innerText = data.totalMembers;
-                    document.getElementById('stat-total-views').innerText = data.totalViews;
-                }
-            } catch (err) {}
-        }
-
-        async function uploadSong() {
+        function uploadSong() {
             const titleInput = document.getElementById('upload-song-title');
             const fileInput = document.getElementById('upload-song-file');
             
@@ -504,36 +299,30 @@
                 return;
             }
 
-            const formData = new FormData();
-            formData.append('song', fileInput.files[0]);
-            formData.append('title', titleInput.value || fileInput.files[0].name);
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const url = e.target.result;
+                const title = titleInput.value || fileInput.files[0].name;
 
-            try {
-                const res = await fetch('http://localhost:3000/api/upload-song', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    alert('อัปโหลดสำเร็จ!');
-                    titleInput.value = '';
-                    fileInput.value = '';
-                    loadSongs();
-                } else { alert(data.message); }
-            } catch (err) { alert('เกิดข้อผิดพลาดในการอัปโหลด'); }
+                let songs = JSON.parse(localStorage.getItem('chatpidim_songs') || '[]');
+                songs.push({ title, url });
+                localStorage.setItem('chatpidim_songs', JSON.stringify(songs));
+
+                alert('อัปโหลดสำเร็จ!');
+                titleInput.value = '';
+                fileInput.value = '';
+                loadSongs();
+            };
+            reader.readAsDataURL(fileInput.files[0]);
         }
 
         let allSongs = [];
-        async function loadSongs() {
-            try {
-                const res = await fetch('http://localhost:3000/api/songs');
-                const data = await res.json();
-                if (data.success) {
-                    allSongs = data.songs;
-                    renderSongList(allSongs);
-                }
-            } catch (err) {}
+        function loadSongs() {
+            allSongs = JSON.parse(localStorage.getItem('chatpidim_songs') || '[]');
+            renderSongList(allSongs);
+            
+            let users = JSON.parse(localStorage.getItem('chatpidim_users') || '[]');
+            document.getElementById('stat-total-members').innerText = users.length;
         }
 
         function renderSongList(songs) {
@@ -564,7 +353,7 @@
             const mp3Player = document.getElementById('mp3-player');
             const mp4Player = document.getElementById('mp4-player');
             
-            if (url.endsWith('.mp4') || url.includes('mp4')) {
+            if (url.includes('video') || url.endsWith('.mp4')) {
                 mp3Player.classList.add('hidden');
                 mp3Player.pause();
                 mp4Player.classList.remove('hidden');
@@ -579,177 +368,33 @@
             }
         }
 
-        async function loadFriendsList() {
-            try {
-                const res = await fetch('http://localhost:3000/api/members');
-                const data = await res.json();
-                if (data.success) {
-                    const listContainer = document.getElementById('friend-list');
-                    listContainer.innerHTML = '';
-                    const others = data.members.filter(m => m.name !== currentUserName);
-                    if (others.length === 0) {
-                        listContainer.innerHTML = '<p class="text-gray-400 text-sm">ยังไม่มีสมาชิกอื่น</p>';
-                        return;
-                    }
-                    others.forEach(f => {
-                        const isFollowing = followingList.includes(f.name);
-                        const unreadCount = unreadMessages[f.name] || 0;
-                        const row = document.createElement('div');
-                        row.className = "flex items-center justify-between bg-gray-50 p-2 rounded border text-sm";
-                        row.innerHTML = `
-                            <div class="flex items-center space-x-2">
-                                <span class="font-medium text-gray-700">${f.name}</span>
-                                ${unreadCount > 0 ? `<span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">${unreadCount}</span>` : ''}
-                            </div>
-                            <div class="space-x-1">
-                                <button onclick="toggleFollow('${f.name}')" class="px-2 py-1 rounded text-xs ${isFollowing ? 'bg-gray-400 text-white' : 'bg-green-600 text-white'}">${isFollowing ? 'เลิกติดตาม' : '➕ ติดตาม'}</button>
-                                <button onclick="openPrivateChat('${f.name}')" class="px-2 py-1 rounded text-xs bg-blue-600 text-white ${isFollowing ? '' : 'opacity-50 cursor-not-allowed'}">💬 แชท</button>
-                            </div>
-                        `;
-                        listContainer.appendChild(row);
-                    });
-                }
-            } catch (err) {}
-        }
-
-        async function updateBubbleFriendList() {
-            try {
-                const res = await fetch('http://localhost:3000/api/members');
-                const data = await res.json();
-                if (data.success) {
-                    const bubbleList = document.getElementById('bubble-friend-list');
-                    bubbleList.innerHTML = '';
-                    const others = data.members.filter(m => m.name !== currentUserName && followingList.includes(m.name));
-                    if (others.length === 0) {
-                        bubbleList.innerHTML = '<p class="text-gray-400 p-1">ยังไม่ได้ติดตามใคร</p>';
-                        return;
-                    }
-                    others.forEach(f => {
-                        const unreadCount = unreadMessages[f.name] || 0;
-                        const item = document.createElement('div');
-                        item.className = "flex justify-between items-center p-1.5 hover:bg-gray-100 rounded cursor-pointer";
-                        item.onclick = () => openPrivateChat(f.name);
-                        item.innerHTML = `
-                            <span class="font-medium text-gray-800">${f.name}</span>
-                            ${unreadCount > 0 ? `<span class="bg-red-500 text-white px-1.5 py-0.2 rounded-full text-[10px] font-bold">${unreadCount}</span>` : '<span class="text-gray-400 text-[10px]">แชท</span>'}
-                        `;
-                        bubbleList.appendChild(item);
-                    });
-                }
-            } catch (err) {}
-        }
-
-        function toggleChatSelector() {
-            const menu = document.getElementById('chat-selector-menu');
-            menu.classList.toggle('hidden');
-        }
-
-        function updateTotalBadge() {
-            const total = Object.values(unreadMessages).reduce((a, b) => a + b, 0);
-            const badge = document.getElementById('bubble-badge');
-            const friendBadge = document.getElementById('friend-unread-badge');
-            if (total > 0) {
-                badge.innerText = total;
-                badge.classList.remove('hidden');
-                if (friendBadge) { friendBadge.innerText = total; friendBadge.classList.remove('hidden'); }
-            } else {
-                badge.classList.add('hidden');
-                if (friendBadge) friendBadge.classList.add('hidden');
-            }
-        }
-
-        function toggleFollow(name) {
-            if (!currentUserName) {
-                alert('กรุณาเข้าสู่ระบบก่อนครับ');
+        function loadFriendsList() {
+            let users = JSON.parse(localStorage.getItem('chatpidim_users') || '[]');
+            const listContainer = document.getElementById('friend-list');
+            listContainer.innerHTML = '';
+            const others = users.filter(m => m.name !== currentUserName);
+            if (others.length === 0) {
+                listContainer.innerHTML = '<p class="text-gray-400 text-sm">ยังไม่มีสมาชิกอื่น</p>';
                 return;
             }
-            if (followingList.includes(name)) {
-                followingList = followingList.filter(item => item !== name);
-            } else {
-                followingList.push(name);
-            }
-            localStorage.setItem('followingList', JSON.stringify(followingList));
-            loadFriendsList();
-            updateBubbleFriendList();
+            others.forEach(f => {
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between bg-gray-50 p-2 rounded border text-sm";
+                row.innerHTML = `<span class="font-medium text-gray-700">${f.name}</span>`;
+                listContainer.appendChild(row);
+            });
         }
 
-        function triggerMediaUpload() {
-            if (!currentUserName) {
-                alert('แชทสาธารณะนี้อ่านได้ทุกคน แต่ต้องสมัครสมาชิกและเข้าสู่ระบบก่อน จึงจะสามารถแชร์รูปภาพหรือวิดีโอได้ครับ');
-                openLoginModal();
-                return;
-            }
-            document.getElementById('media-upload').click();
-        }
-
-        function playNotificationSound() {
-            if (!document.getElementById('setting-sound').checked) return;
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(800, ctx.currentTime);
-            gain.gain.setValueAtTime(0.1, ctx.currentTime);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.15);
-        }
-
-        function openPrivateChat(friendName) {
-            if (!followingList.includes(friendName)) {
-                alert('คุณต้องกดติดตามเพื่อนคนนี้ก่อน ถึงจะสามารถเปิดแชทส่วนตัวคุยกันได้ครับ!');
-                return;
-            }
-            activeChatFriend = friendName;
-            
-            if (unreadMessages[friendName]) {
-                delete unreadMessages[friendName];
-                localStorage.setItem('unreadMessages', JSON.stringify(unreadMessages));
-                updateTotalBadge();
-                updateBubbleFriendList();
-            }
-
-            document.getElementById('private-chat-title').innerText = 'แชทกับ: ' + friendName;
-            document.getElementById('private-chat-modal').classList.remove('hidden');
-            document.getElementById('chat-selector-menu').classList.add('hidden');
-            document.getElementById('private-chat-messages').innerHTML = ''; 
-            playNotificationSound();
-        }
-
-        function closePrivateChat() {
-            document.getElementById('private-chat-modal').classList.add('hidden');
-            activeChatFriend = '';
-            endVideoCall();
-        }
-
-        let localStream = null;
-        async function toggleVideoCall() {
-            const videoBox = document.getElementById('video-call-box');
-            const videoElem = document.getElementById('local-video');
-            if (videoBox.classList.contains('hidden')) {
-                videoBox.classList.remove('hidden');
-                try {
-                    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    videoElem.srcObject = localStream;
-                } catch (e) { alert('ไม่สามารถเปิดใช้งานกล้องได้'); }
-            } else {
-                endVideoCall();
-            }
-        }
-
-        function toggleCam() {
-            if (localStream) {
-                localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled);
-            }
-        }
-
-        function endVideoCall() {
-            document.getElementById('video-call-box').classList.add('hidden');
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
+        function sendPublicMessage() {
+            const input = document.getElementById('public-chat-input');
+            if (!input.value.trim()) return;
+            const chatBox = document.getElementById('public-chat-box');
+            const msg = document.createElement('div');
+            msg.className = "bg-blue-50 border p-2 rounded text-sm";
+            msg.innerHTML = `<span class="font-bold text-blue-600">${currentUserName || 'ผู้เยี่ยมชม'}:</span> ${input.value}`;
+            chatBox.appendChild(msg);
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         let currentAudioMode = 'radio';
