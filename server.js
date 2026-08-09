@@ -20,6 +20,9 @@ app.use(express.text());
 app.use(cors());
 app.use('/uploads', express.static('uploads'));
 
+// ✨ เพิ่มคำสั่งนี้เพื่อให้ระบบเปิดหน้า index.html ออัตโนมัติ
+app.use(express.static(path.join(__dirname)));
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const dir = './uploads';
@@ -55,15 +58,11 @@ let currentViewers = 0;
 io.on('connection', (socket) => {
     console.log('⚡ มีผู้ใช้งานเชื่อมต่อ Socket:', socket.id);
 
-    // รับข้อความส่วนตัว แล้วกระจายให้ผู้รับแบบ Real-time
     socket.on('send_private_message', (data) => {
-        // data = { sender, receiver, message, timestamp }
         io.emit('receive_private_message', data);
     });
 
-    // รับข้อความแชทสาธารณะ
     socket.on('send_public_message', (data) => {
-        // data = { sender, message, type, url }
         io.emit('receive_public_message', data);
     });
 
@@ -170,7 +169,7 @@ app.post('/api/upload-song', upload.single('song'), (req, res) => {
         const newMedia = {
             id: Date.now(),
             title: titleText,
-            url: `http://localhost:3000/uploads/${req.file.filename}`
+            url: `https://chatpidim.onrender.com/uploads/${req.file.filename}`
         };
         db.songs.push(newMedia);
         saveDB(db);
@@ -194,6 +193,11 @@ app.get('/api/stats', (req, res) => {
         totalMembers: db.members.length,
         totalViews: db.totalViews
     });
+});
+
+// เส้นทางสำรองสำหรับหน้าแรกกรณีเรียกผ่าน URL ตรง
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 server.listen(PORT, () => {
