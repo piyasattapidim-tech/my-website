@@ -462,5 +462,284 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         });
     </script>
+
+<!-- UI เสริม: หน้าต่างแชทส่วนตัวแบบลอยอิสระ (Draggable Floating Chat) -->
+<div id="floating-chat-window" style="display: none; position: fixed; bottom: 20px; right: 20px; width: 320px; background: white; border: 1px solid #ccc; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden;">
+    <!-- แถบหัวข้อสำหรับคลิกลากหน้าต่าง -->
+    <div id="chat-header-bar" onmousedown="startDrag(event)" style="background: #2563eb; color: white; padding: 10px; cursor: move; display: flex; justify-content: space-between; align-items: center;">
+        <span id="chat-title-name" style="font-weight: bold; font-size: 14px;">💬 แชทส่วนตัว</span>
+        <div>
+            <button onclick="startVideoCall(true)" title="วิดีโอคอล" style="background:none; border:none; color:white; cursor:pointer; font-size:16px; margin-right:5px;">📹</button>
+            <button onclick="startVideoCall(false)" title="โทรเสียง" style="background:none; border:none; color:white; cursor:pointer; font-size:16px; margin-right:5px;">📞</button>
+            <button onclick="closeFloatingChat()" style="background:none; border:none; color:white; cursor:pointer; font-weight:bold;">✕</button>
+        </div>
+    </div>
+    <!-- กล่องข้อความแชท -->
+    <div id="floating-chat-messages" style="height: 220px; overflow-y: auto; padding: 10px; background: #f9fafb; font-size: 13px;"></div>
+    <!-- ช่องพิมพ์ข้อความ -->
+    <div style="display: flex; padding: 8px; border-top: 1px solid #eee; background: white;">
+        <input type="text" id="floating-chat-input" placeholder="พิมพ์ข้อความ..." style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;" />
+        <button onclick="sendFloatingMessage()" style="background: #2563eb; color: white; border: none; padding: 6px 12px; margin-left: 5px; border-radius: 4px; cursor: pointer;">ส่ง</button>
+    </div>
+</div>
+
+<!-- UI หน้าต่างวิดีโอคอล / โทร -->
+<div id="video-call-modal" style="display: none; position: fixed; top: 15%; left: 20%; width: 60%; background: #111; color: white; padding: 20px; border-radius: 12px; z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.5);">
+    <h3 id="call-status-title" style="margin-bottom: 15px; text-align: center;">กำลังเชื่อมต่อการโทร...</h3>
+    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+        <video id="local-video" autoplay playsinline muted style="width: 48%; background: black; border-radius: 8px; height: 200px; object-fit: cover;"></video>
+        <video id="remote-video" autoplay playsinline style="width: 48%; background: black; border-radius: 8px; height: 200px; object-fit: cover;"></video>
+    </div>
+    <div style="text-align: center; display: flex; justify-content: center; gap: 10px;">
+        <button onclick="toggleCamera()" id="toggle-cam-btn" style="background: #d97706; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">ปิด/เปิด กล้อง</button>
+        <button onclick="hangUpCall()" style="background: #dc2626; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">วางสาย</button>
+    </div>
+</div>
+
+<!-- ส่วนเพิ่มเติมสำหรับหน้าตั้งค่าโปรไฟล์ และ ฟีดหน้าหลัก -->
+<script>
+    // แจ้งสถานะออนไลน์ไปที่ Server ทันทีเมื่อโหลดหน้าเว็บ
+    window.addEventListener('load', () => {
+        if (window.currentUserName && window.socket) {
+            window.socket.emit('user_online', window.currentUserName);
+        }
+    });
+
+    let onlineUsersList = [];
+    if (window.socket) {
+        window.socket.on('online_users_list', (users) => {
+            onlineUsersList = users;
+            updateFriendsStatusUI(); // อัปเดตจุดสีเขียว/แดงในรายชื่อเพื่อน
+        });
+    }
+
+    // ฟังก์ชันอัปเดตสถานะจุดเขียว (ออนไลน์) / แดง (ออฟไลน์) ในรายชื่อเพื่อน
+    function updateFriendsStatusUI() {
+        const friendItems = document.querySelectorAll('.friend-row-item');
+        friendItems.forEach(item => {
+            const fName = item.getAttribute('data-username');
+            const dot = item.querySelector('.status-dot');
+            if (dot) {
+                if (onlineUsersList.includes(fName)) {
+                    dot.style.background = '#22c55e'; // สีเขียว = ออนไลน์
+                    dot.title = 'ออนไลน์';
+                } else {
+                    dot.style.background = '#ef4444'; // สีแดง = ออฟไลน์
+                    dot.title = 'ออฟไลน์';
+                }
+            }
+        });
+    }
+
+    // --- ฟังก์ชันลากหน้าต่างแชทอิสระ (Draggable Floating Chat) ---
+    let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
+    function startDrag(e) {
+        isDragging = true;
+        const chatWin = document.getElementById('floating-chat-window');
+        dragOffsetX = e.clientX - chatWin.offsetLeft;
+        dragOffsetY = e.clientY - chatWin.offsetTop;
+        document.addEventListener('mousemove', onDragging);
+        document.addEventListener('mouseup', stopDrag);
+    }
+    function onDragging(e) {
+        if (!isDragging) return;
+        const chatWin = document.getElementById('floating-chat-window');
+        chatWin.style.left = (e.clientX - dragOffsetX) + 'px';
+        chatWin.style.top = (e.clientY - dragOffsetY) + 'px';
+        chatWin.style.bottom = 'auto';
+        chatWin.style.right = 'auto';
+    }
+    function stopDrag() {
+        isDragging = false;
+        document.removeEventListener('mousemove', onDragging);
+        document.removeEventListener('mouseup', stopDrag);
+    }
+
+    let activeChatUser = null;
+    function openFloatingChat(username) {
+        activeChatUser = username;
+        document.getElementById('chat-title-name.innerText = `💬 แชทกับ ${username}`;
+        document.getElementById('floating-chat-window').style.display = 'block';
+        loadPrivateMessages(username);
+    }
+    function closeFloatingChat() {
+        document.getElementById('floating-chat-window').style.display = 'none';
+        activeChatUser = null;
+    }
+
+    function loadPrivateMessages(targetUser) {
+        if (!window.currentUserName) return;
+        fetch(`https://chatpidim.onrender.com/api/private-messages/${window.currentUserName}/${targetUser}`)
+            .then(res => res.json())
+            .then(msgs => {
+                const box = document.getElementById('floating-chat-messages');
+                box.innerHTML = '';
+                msgs.forEach(m => {
+                    const div = document.createElement('div');
+                    div.style.margin = '4px 0';
+                    div.style.textAlign = m.sender === window.currentUserName ? 'right' : 'left';
+                    div.innerHTML = `<span style="background: ${m.sender === window.currentUserName ? '#dbeafe' : '#f3f4f6'}; padding: 4px 8px; border-radius: 6px; display: inline-block;"><b>${m.sender}:</b> ${m.message}</span>`;
+                    box.appendChild(div);
+                });
+                box.scrollTop = box.scrollHeight;
+            });
+    }
+
+    function sendFloatingMessage() {
+        const input = document.getElementById('floating-chat-input');
+        const message = input.value.trim();
+        if (!message || !activeChatUser || !window.currentUserName) return;
+
+        if (window.socket) {
+            window.socket.emit('send_private_message', {
+                sender: window.currentUserName,
+                receiver: activeChatUser,
+                message: message
+            });
+        }
+        input.value = '';
+    }
+
+    if (window.socket) {
+        window.socket.on('receive_private_message', (msg) => {
+            if (activeChatUser && (msg.sender === activeChatUser || msg.receiver === activeChatUser)) {
+                const box = document.getElementById('floating-chat-messages');
+                const div = document.createElement('div');
+                div.style.margin = '4px 0';
+                div.style.textAlign = msg.sender === window.currentUserName ? 'right' : 'left';
+                div.innerHTML = `<span style="background: ${msg.sender === window.currentUserName ? '#dbeafe' : '#f3f4f6'}; padding: 4px 8px; border-radius: 6px; display: inline-block;"><b>${msg.sender}:</b> ${msg.message}</span>`;
+                box.appendChild(div);
+                box.scrollTop = box.scrollHeight;
+            }
+        });
+    }
+
+    // --- ระบบวิดีโอคอล (WebRTC พร้อมเปิด/ปิดกล้อง) ---
+    let localStream = null;
+    let isCameraOn = true;
+
+    async function startVideoCall(videoEnabled) {
+        isCameraOn = videoEnabled;
+        document.getElementById('video-call-modal').style.display = 'block';
+        document.getElementById('call-status-title').innerText = `กำลังโทรหา ${activeChatUser}...`;
+
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: isCameraOn, audio: true });
+            document.getElementById('local-video').srcObject = localStream;
+            if (!isCameraOn && localStream.getVideoTracks().length > 0) {
+                localStream.getVideoTracks()[0].enabled = false;
+            }
+
+            if (window.socket && activeChatUser && window.currentUserName) {
+                window.socket.emit('call_user', {
+                    toUser: activeChatUser,
+                    fromUser: window.currentUserName,
+                    videoEnabled: isCameraOn
+                });
+            }
+        } catch (err) {
+            alert('ไม่สามารถเปิดใช้งานกล้องหรือไมโครโฟนได้ กรุณาอนุญาตสิทธิ์');
+        }
+    }
+
+    function toggleCamera() {
+        if (localStream && localStream.getVideoTracks().length > 0) {
+            isCameraOn = !isCameraOn;
+            localStream.getVideoTracks()[0].enabled = isCameraOn;
+            document.getElementById('toggle-cam-btn').innerText = isCameraOn ? 'ปิดกล้อง' : 'เปิดกล้อง';
+        } else {
+            alert('อุปกรณ์นี้ไม่มีกล้องหรือสิทธิ์ถูกปิดกั้น');
+        }
+    }
+
+    function hangUpCall() {
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+        }
+        document.getElementById('video-call-modal').style.display = 'none';
+        if (window.socket && activeChatUser) {
+            window.socket.emit('end_call', { toUser: activeChatUser });
+        }
+    }
+
+    if (window.socket) {
+        window.socket.on('incoming_call', (data) => {
+            if (confirm(`มีสายเรียกเข้าจาก ${data.fromUser} ต้องการรับสายหรือไม่?`)) {
+                activeChatUser = data.fromUser;
+                startVideoCall(data.videoEnabled);
+            }
+        });
+        window.socket.on('call_ended', () => {
+            hangUpCall();
+            alert('สายถูกตัดแล้ว');
+        });
+    }
+
+    // --- ระบบอัปโหลดรูปโปรไฟล์ และ ฟีดหน้าหลัก ---
+    function uploadProfileData() {
+        const statusText = document.getElementById('profile-status-input')?.value || '';
+        const fileInput = document.getElementById('profile-image-file');
+        
+        if (fileInput && fileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Image = e.target.result;
+                sendProfileUpdateToServer(base64Image, statusText);
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        } else {
+            sendProfileUpdateToServer('', statusText);
+        }
+    }
+
+    function sendProfileUpdateToServer(imgData, statusMsg) {
+        if (!window.currentUserName) {
+            alert('กรุณาเข้าสู่ระบบก่อน');
+            return;
+        }
+
+        fetch('https://chatpidim.onrender.com/api/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: window.currentUserName,
+                profileImage: imgData,
+                statusMessage: statusMsg
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('อัปเดตโปรไฟล์และสถานะสำเร็จ!');
+                // บันทึกรูปลง LocalStorage เพื่อแสดงผลหน้าเว็บทันที
+                if(data.user.profileImage) {
+                    localStorage.setItem('user_profile_img_' + window.currentUserName, data.user.profileImage);
+                }
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    // --- ระบบแชทสาธารณะ (ส่งรูป + กดไลค์หัวใจ) ---
+    function sendPublicImage() {
+        const fileInput = document.getElementById('public-chat-file');
+        if (!fileInput.files[0]) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const imgUrl = e.target.result;
+            const sender = window.currentUserName || 'ผู้เยี่ยมชม';
+            if (window.socket) {
+                window.socket.emit('chat-message', {
+                    sender: sender,
+                    message: `<img src="${imgUrl}" style="max-width: 150px; border-radius: 6px; margin-top: 5px;" />`
+                });
+            }
+            fileInput.value = '';
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    }
+</script>
 </body>
 </html>
