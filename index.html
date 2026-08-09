@@ -4,28 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatpidim</title>
-    <!-- Tailwind CSS (หากในโปรเจกต์มีอยู่แล้ว สามารถใช้ร่วมกันได้) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hidden { display: none; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    </style>
 </head>
 <body class="bg-gray-100">
 
-    <!-- ส่วนหน้าตา UI หลัก (ตัวอย่างโครงสร้างพื้นฐานเพื่อให้โค้ดสมบูรณ์) -->
+    <!-- ส่วนหน้าตา UI หลัก -->
     <div class="max-w-4xl mx-auto p-4">
         <h1 class="text-2xl font-bold mb-4">Chatpidim Application</h1>
         
         <!-- สถิติสมาชิก -->
-        <div class="mb-4">จำนวนสมาชิกทั้งหมด: <span id="stat-total-members">0</span> คน</div>
+        <div class="mb-4">จำนวนสมาชิกทั้งหมด: <span id="stat-total-members" class="font-bold text-blue-600">0</span> คน</div>
+
+        <!-- ปุ่มออกจากระบบ -->
+        <button onclick="logout()" class="bg-red-500 text-white px-4 py-1 rounded text-sm mb-4">ออกจากระบบ</button>
+
+        <!-- ส่วนอัปโหลดเพลง/วิดีโอ -->
+        <div class="bg-white p-4 rounded shadow mb-4">
+            <h2 class="font-bold mb-2">อัปโหลดเพลง/วิดีโอ (เก็บใน LocalStorage)</h2>
+            <input type="text" id="upload-song-title" placeholder="ชื่อเพลง (ถ้าไม่ใส่จะใช้ชื่อไฟล์)" class="border p-1 rounded w-full mb-2 text-sm">
+            <input type="file" id="upload-song-file" accept="audio/*,video/mp4" class="mb-2 text-sm block">
+            <button onclick="uploadSong()" class="bg-green-600 text-white px-4 py-1 rounded text-sm">อัปโหลด</button>
+        </div>
+
+        <!-- รายการเพลง/วิดีโอ -->
+        <div class="bg-white p-4 rounded shadow mb-4">
+            <h2 id="player-mode-title" class="font-bold mb-2">🎵 รายการสื่อ</h2>
+            <button onclick="toggleAudioMode()" class="bg-gray-500 text-white px-2 py-1 rounded text-xs mb-2">สลับโหมด (วิทยุ / MP3)</button>
+            
+            <!-- โหมดวิทยุ -->
+            <div id="radio-container">
+                <input type="text" id="radio-url" class="border p-1 w-full text-sm mb-2" placeholder="ใส่ลิงก์สตรีมวิทยุ (เช่น .m3u8, .mp3)">
+                <button onclick="playRadio()" class="bg-blue-500 text-white px-4 py-1 rounded text-sm">เล่นวิทยุ</button>
+            </div>
+
+            <!-- โหมด MP3/MP4 -->
+            <div id="mp3-container" class="hidden">
+                <input type="text" id="search-song" oninput="filterSongs()" placeholder="ค้นหาเพลง..." class="border p-1 w-full text-sm mb-2">
+                <div id="song-list" class="max-h-40 overflow-y-auto space-y-1"></div>
+            </div>
+            
+            <!-- เครื่องเล่น -->
+            <audio id="mp3-player" controls class="hidden w-full mt-3"></audio>
+            <video id="mp4-player" controls class="hidden w-full mt-3 h-48 bg-black"></video>
+        </div>
 
         <!-- รายชื่อเพื่อนสำหรับแชท -->
         <div class="bg-white p-4 rounded shadow mb-4">
-            <h2 class="font-bold mb-2">รายชื่อเพื่อน</h2>
-            <div id="friend-list"></div>
+            <h2 class="font-bold mb-2">รายชื่อเพื่อนออนไลน์</h2>
+            <div id="friend-list" class="space-y-1"></div>
         </div>
 
         <!-- หน้าต่างแชทลอย (Floating Chat Window) -->
         <div id="floating-chat-window" style="display:none; position:fixed; bottom:20px; right:20px; width:300px; background:white; border:1px solid #ccc; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1); z-index:1000;">
             <div onmousedown="startDrag(event)" style="background:#2563eb; color:white; padding:8px; cursor:move; border-top-left-radius:8px; border-top-right-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-                <span id="chat-title-name">💬 แชท</span>
+                <span id="chat-title-name" class="font-medium text-sm">💬 แชท</span>
                 <div>
                     <button onclick="startVideoCall(true)" style="background:#10b981; color:white; border:none; padding:2px 6px; border-radius:4px; font-size:12px; cursor:pointer; margin-right:4px;" title="วิดีโอคอล">📹</button>
                     <button onclick="closeFloatingChat()" style="background:transparent; color:white; border:none; font-weight:bold; cursor:pointer;">X</button>
@@ -41,7 +78,7 @@
         <!-- Modal สำหรับวิดีโอคอล -->
         <div id="video-call-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
             <div style="background:white; padding:20px; border-radius:8px; text-align:center; width:90%; max-width:600px;">
-                <h3 id="call-status-title" class="font-bold text-lg mb-4">กำลังโทร...</h3>
+                <h3 id="call-status-title" class="font-bold text-lg mb-4">กำลังเชื่อมต่อ...</h3>
                 <div style="display:flex; justify-content:center; gap:10px; margin-bottom:15px; background:#000; border-radius:8px; overflow:hidden; position:relative; height:350px;">
                     <video id="remote-video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
                     <video id="local-video" autoplay playsinline muted style="position:absolute; bottom:15px; right:15px; width:120px; height:90px; object-fit:cover; border:2px solid white; border-radius:6px; background:#222;"></video>
@@ -54,98 +91,144 @@
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- เพิ่มสคริปต์ Socket.io เข้ามาเชื่อมต่อระบบ Real-time ตรงนี้ -->
-    <!-- ========================================== -->
+    <!-- Socket.io Client -->
     <script src="https://chatpidim.onrender.com/socket.io/socket.io.js"></script>
-
-    <!-- ส่วนสคริปต์ทั้งหมดรวมในที่เดียว -->
+    
+    <!-- ส่วนสคริปต์การทำงานทั้งหมด -->
     <script>
-        // --- 1. เชื่อมต่อ Socket.io กับเซิร์ฟเวอร์ ---
-        window.socket = io('https://chatpidim.onrender.com');
+        const SOCKET_SERVER_URL = 'https://chatpidim.onrender.com';
+        window.socket = io(SOCKET_SERVER_URL);
 
-        // สมมติชื่อผู้ใช้งานปัจจุบัน (ดึงจาก LocalStorage)
-        let currentUserName = localStorage.getItem('currentUserName') || 'User_' + Math.floor(Math.random() * 1000);
-        localStorage.setItem('currentUserName', currentUserName);
-
-        // --- 2. ส่งข้อมูลแจ้งเซิร์ฟเวอร์ว่าผู้ใช้คนนี้ออนไลน์เมื่อเชื่อมต่อสำเร็จ ---
-        window.socket.on('connect', () => {
-            window.socket.emit('user_online', currentUserName);
-        });
+        let currentUserName = localStorage.getItem('currentUserName');
+        if (!currentUserName) {
+            currentUserName = 'User_' + Math.floor(Math.random() * 1000);
+            localStorage.setItem('currentUserName', currentUserName);
+        }
+        window.socket.emit('user_connected', currentUserName);
 
         function logout() {
             localStorage.removeItem('currentUserName');
+            window.socket.emit('user_disconnected', currentUserName);
             alert('ออกจากระบบเรียบร้อยแล้ว');
             location.reload();
         }
 
         function loadStats() {
-            fetch('https://chatpidim.onrender.com/api/stats')
+            fetch(`${SOCKET_SERVER_URL}/api/stats`)
                 .then(res => res.json())
                 .then(data => {
                     if(data.totalMembers !== undefined) {
                         document.getElementById('stat-total-members').innerText = data.totalMembers;
                     }
                 })
-                .catch(err => console.log('Load stats error'));
+                .catch(err => console.log('Load stats error', err));
+        }
+
+        let currentAudioMode = 'radio';
+        let allSongs = [];
+
+        function toggleAudioMode() {
+            const radioContainer = document.getElementById('radio-container');
+            const mp3Container = document.getElementById('mp3-container');
+            const title = document.getElementById('player-mode-title');
+            const mp3Player = document.getElementById('mp3-player');
+            const mp4Player = document.getElementById('mp4-player');
+
+            mp3Player.pause();
+            mp4Player.pause();
+
+            if (currentAudioMode === 'radio') {
+                currentAudioMode = 'mp3';
+                title.innerText = '🎵 เครื่องเล่นสื่อ (Local)';
+                radioContainer.classList.add('hidden');
+                mp3Container.classList.remove('hidden');
+                loadSongs();
+            } else {
+                currentAudioMode = 'radio';
+                title.innerText = '📻 วิทยุออนไลน์';
+                mp3Container.classList.add('hidden');
+                radioContainer.classList.remove('hidden');
+                mp3Player.classList.add('hidden');
+                mp4Player.classList.add('hidden');
+            }
+        }
+
+        function playRadio() {
+            const url = document.getElementById('radio-url').value.trim();
+            const mp3Player = document.getElementById('mp3-player');
+            const mp4Player = document.getElementById('mp4-player');
+
+            if (!url) { alert('กรุณาใส่ URL วิทยุ'); return; }
+
+            mp3Player.classList.add('hidden');
+            mp4Player.classList.add('hidden');
+            mp3Player.pause();
+            mp4Player.pause();
+
+            if (url.endsWith('.mp4')) {
+                mp4Player.src = url;
+                mp4Player.classList.remove('hidden');
+                mp4Player.play();
+            } else {
+                mp3Player.src = url;
+                mp3Player.classList.remove('hidden');
+                mp3Player.play();
+            }
         }
 
         function uploadSong() {
             const titleInput = document.getElementById('upload-song-title');
             const fileInput = document.getElementById('upload-song-file');
             
-            if (!fileInput || !fileInput.files[0]) {
-                alert('กรุณาเลือกไฟล์เพลงหรือวิดีโอก่อนครับ');
-                return;
-            }
+            if (!fileInput.files[0]) { alert('กรุณาเลือกไฟล์'); return; }
 
+            const file = fileInput.files[0];
             const reader = new FileReader();
+
             reader.onload = function(e) {
                 const url = e.target.result;
-                const title = titleInput.value || fileInput.files[0].name;
+                const title = titleInput.value.trim() || file.name;
 
                 let songs = JSON.parse(localStorage.getItem('chatpidim_songs') || '[]');
                 songs.push({ title, url });
                 localStorage.setItem('chatpidim_songs', JSON.stringify(songs));
 
-                alert('อัปโหลดสำเร็จ!');
+                alert('อัปโหลดสำเร็จ (บันทึกในเครื่อง)');
                 titleInput.value = '';
                 fileInput.value = '';
-                loadSongs();
+                if(currentAudioMode === 'mp3') loadSongs();
             };
-            reader.readAsDataURL(fileInput.files[0]);
+            reader.readAsDataURL(file);
         }
 
-        let allSongs = [];
         function loadSongs() {
             allSongs = JSON.parse(localStorage.getItem('chatpidim_songs') || '[]');
             renderSongList(allSongs);
-            loadStats();
         }
 
         function renderSongList(songs) {
             const songList = document.getElementById('song-list');
-            if (!songList) return;
             songList.innerHTML = '';
             if (songs.length === 0) {
-                songList.innerHTML = '<p class="text-gray-400 text-center py-1">ยังไม่มีเพลง</p>';
+                songList.innerHTML = '<p class="text-gray-400 text-sm text-center py-2">ยังไม่มีเพลงในรายการ</p>';
                 return;
             }
-            songs.forEach(s => {
+            songs.forEach((s, index) => {
                 const item = document.createElement('div');
-                item.className = "flex justify-between items-center bg-gray-50 p-1 rounded text-xs";
+                item.className = "flex justify-between items-center bg-gray-50 p-2 rounded border text-sm hover:bg-gray-100";
                 item.innerHTML = `
-                    <span class="truncate max-w-[120px]">${s.title}</span>
-                    <button onclick="playMedia('${s.url}', '${s.title}')" class="bg-blue-500 text-white px-2 py-0.5 rounded text-[10px]">▶️ เล่น</button>
+                    <span class="truncate flex-1 font-medium text-gray-800" title="${s.title}">${index + 1}. ${s.title}</span>
+                    <div class="flex gap-1 ml-2">
+                        <button onclick="playMedia('${s.url}', '${s.title}')" class="bg-blue-500 text-white px-2 py-0.5 rounded text-xs">▶️ เล่น</button>
+                        <button onclick="deleteSong(${index})" class="bg-red-100 text-red-600 px-2 py-0.5 rounded text-xs">ลบ</button>
+                    </div>
                 `;
                 songList.appendChild(item);
             });
         }
 
         function filterSongs() {
-            const searchInput = document.getElementById('search-song');
-            if (!searchInput) return;
-            const keyword = searchInput.value.toLowerCase();
+            const keyword = document.getElementById('search-song').value.toLowerCase();
             const filtered = allSongs.filter(s => s.title.toLowerCase().includes(keyword));
             renderSongList(filtered);
         }
@@ -153,86 +236,63 @@
         function playMedia(url, title) {
             const mp3Player = document.getElementById('mp3-player');
             const mp4Player = document.getElementById('mp4-player');
-            if (!mp3Player || !mp4Player) return;
-            
-            if (url.includes('video') || url.endsWith('.mp4')) {
+            const isVideo = url.includes('video') || url.endsWith('.mp4');
+
+            if (isVideo) {
                 mp3Player.classList.add('hidden');
                 mp3Player.pause();
-                mp4Player.classList.remove('hidden');
                 mp4Player.src = url;
+                mp4Player.classList.remove('hidden');
                 mp4Player.play();
             } else {
                 mp4Player.classList.add('hidden');
                 mp4Player.pause();
-                mp3Player.classList.remove('hidden');
                 mp3Player.src = url;
+                mp3Player.classList.remove('hidden');
                 mp3Player.play();
             }
         }
 
+        function deleteSong(index) {
+            if(!confirm('ยืนยันการลบเพลง?')) return;
+            let songs = JSON.parse(localStorage.getItem('chatpidim_songs') || '[]');
+            songs.splice(index, 1);
+            localStorage.setItem('chatpidim_songs', JSON.stringify(songs));
+            loadSongs();
+        }
+
         function loadFriendsList() {
-            fetch('https://chatpidim.onrender.com/api/users')
+            fetch(`${SOCKET_SERVER_URL}/api/users`)
                 .then(res => res.json())
                 .then(users => {
                     const listContainer = document.getElementById('friend-list');
                     if (!listContainer) return;
                     listContainer.innerHTML = '';
+                    
                     const others = users.filter(m => m.name !== currentUserName);
                     if (others.length === 0) {
-                        listContainer.innerHTML = '<p class="text-gray-400 text-sm">ยังไม่มีสมาชิกอื่น</p>';
+                        listContainer.innerHTML = '<p class="text-gray-400 text-sm py-1">ยังไม่มีสมาชิกอื่นในระบบ</p>';
                         return;
                     }
+
                     others.forEach(f => {
                         const row = document.createElement('div');
-                        row.className = "friend-row-item flex items-center justify-between bg-gray-50 p-2 rounded border text-sm mb-1";
-                        row.setAttribute('data-username', f.name);
+                        row.className = "flex items-center justify-between bg-gray-50 p-2 rounded border text-sm mb-1";
                         row.innerHTML = `
                             <div class="flex items-center gap-2">
-                                <span class="status-dot w-2.5 h-2.5 rounded-full inline-block" style="background: #ef4444;" title="ออฟไลน์"></span>
+                                <span id="status-dot-${f.name}" class="status-dot bg-red-500" title="ออฟไลน์"></span>
                                 <span class="font-medium text-gray-700">${f.name}</span>
                             </div>
                             <button onclick="openFloatingChat('${f.name}')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs">💬 แชท</button>
                         `;
                         listContainer.appendChild(row);
                     });
+
+                    window.socket.emit('get_online_users');
                 })
-                .catch(err => console.log('Load friends error'));
+                .catch(err => console.log('Load friends error', err));
         }
 
-        function sendPublicMessage() {
-            const input = document.getElementById('public-chat-input');
-            if (!input) return;
-            const message = input.value.trim();
-            if (!message) return;
-            
-            const sender = currentUserName || 'ผู้เยี่ยมชม';
-            if (window.socket) {
-                window.socket.emit('chat-message', { sender, message });
-            }
-            input.value = '';
-        }
-
-        let currentAudioMode = 'radio';
-        function toggleAudioMode() {
-            const radioContainer = document.getElementById('radio-container');
-            const mp3Container = document.getElementById('mp3-container');
-            const title = document.getElementById('player-mode-title');
-            if (!radioContainer || !mp3Container || !title) return;
-
-            if (currentAudioMode === 'radio') {
-                currentAudioMode = 'mp3';
-                title.innerText = '🎵 เครื่องเล่น MP3';
-                radioContainer.classList.add('hidden');
-                mp3Container.classList.remove('hidden');
-            } else {
-                currentAudioMode = 'radio';
-                title.innerText = '📻 วิทยุออนไลน์';
-                mp3Container.classList.add('hidden');
-                radioContainer.classList.remove('hidden');
-            }
-        }
-
-        // --- ระบบลากหน้าต่างแชทลอย ---
         let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
         function startDrag(e) {
             isDragging = true;
@@ -270,21 +330,18 @@
 
         function loadPrivateMessages(targetUser) {
             if (!currentUserName) return;
-            fetch(`https://chatpidim.onrender.com/api/private-messages/${currentUserName}/${targetUser}`)
+            fetch(`${SOCKET_SERVER_URL}/api/private-messages/${currentUserName}/${targetUser}`)
                 .then(res => res.json())
                 .then(msgs => {
                     const box = document.getElementById('floating-chat-messages');
                     if (!box) return;
                     box.innerHTML = '';
                     msgs.forEach(m => {
-                        const div = document.createElement('div');
-                        div.style.margin = '4px 0';
-                        div.style.textAlign = m.sender === currentUserName ? 'right' : 'left';
-                        div.innerHTML = `<span style="background: ${m.sender === currentUserName ? '#dbeafe' : '#f3f4f6'}; padding: 4px 8px; border-radius: 6px; display: inline-block;"><b>${m.sender}:</b> ${m.message}</span>`;
-                        box.appendChild(div);
+                        appendMessageToBox(m.sender, m.message);
                     });
                     box.scrollTop = box.scrollHeight;
-                });
+                })
+                .catch(err => console.log('Load private msg error', err));
         }
 
         function sendFloatingMessage() {
@@ -303,8 +360,20 @@
             input.value = '';
         }
 
+        function appendMessageToBox(sender, message) {
+            const box = document.getElementById('floating-chat-messages');
+            if (!box) return;
+            const div = document.createElement('div');
+            div.style.margin = '4px 0';
+            const isMe = sender === currentUserName;
+            div.style.textAlign = isMe ? 'right' : 'left';
+            div.innerHTML = `<span style="background: ${isMe ? '#dbeafe' : '#f3f4f6'}; padding: 4px 8px; border-radius: 6px; display: inline-block; text-align: left;"><b>${sender}:</b> ${message}</span>`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
         // ==========================================
-        // --- ระบบ WebRTC วิดีโอคอล (ฉบับสมบูรณ์) ---
+        // --- ระบบ WebRTC วิดีโอคอล (สองฝั่งเห็นกันชัดเจน) ---
         // ==========================================
         let localStream = null;
         let peerConnection = null;
@@ -321,6 +390,13 @@
             if (peerConnection) return;
             peerConnection = new RTCPeerConnection(rtcConfig);
 
+            // เพิ่มแทรกวิดีโอและเสียงของเราเข้าไปในเชื่อมต่อทันที
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+            }
+
             peerConnection.onicecandidate = (event) => {
                 if (event.candidate && window.socket) {
                     window.socket.emit('ice_candidate', {
@@ -330,21 +406,24 @@
                 }
             };
 
+            // รับสตรีมวิดีโอจากฝั่งตรงข้ามมาแสดงผล
             peerConnection.ontrack = (event) => {
                 const remoteVideo = document.getElementById('remote-video');
-                if (remoteVideo && event.streams[0]) {
-                    remoteVideo.srcObject = event.streams[0];
+                if (remoteVideo) {
+                    if (event.streams && event.streams[0]) {
+                        remoteVideo.srcObject = event.streams[0];
+                    } else {
+                        let inboundStream = new MediaStream();
+                        inboundStream.addTrack(event.track);
+                        remoteVideo.srcObject = inboundStream;
+                    }
+                    remoteVideo.play().catch(e => console.log("Remote video play error:", e));
                 }
             };
-
-            if (localStream) {
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-            }
         }
 
         async function startVideoCall(videoEnabled) {
+            if (!activeChatUser) { alert('กรุณาเลือกเพื่อนที่จะโทร'); return; }
             isCameraOn = videoEnabled;
             document.getElementById('video-call-modal').style.display = 'flex';
             document.getElementById('call-status-title').innerText = `กำลังเชื่อมต่อกับ ${activeChatUser}...`;
@@ -372,6 +451,7 @@
             } catch (err) {
                 console.error(err);
                 alert('ไม่สามารถเปิดใช้งานกล้องหรือไมโครโฟนได้ กรุณาตรวจสอบสิทธิ์การใช้งาน');
+                hangUpCall();
             }
         }
 
@@ -400,18 +480,22 @@
             }
         }
 
-        // --- Socket Events ---
         if (window.socket) {
+            window.socket.on('update_online_users', (onlineUsers) => {
+                if(Array.isArray(onlineUsers)) {
+                    onlineUsers.forEach(username => {
+                        const dot = document.getElementById(`status-dot-${username}`);
+                        if (dot) {
+                            dot.style.background = '#10b981';
+                            dot.title = 'ออนไลน์';
+                        }
+                    });
+                }
+            });
+
             window.socket.on('receive_private_message', (msg) => {
                 if (activeChatUser && (msg.sender === activeChatUser || msg.receiver === activeChatUser)) {
-                    const box = document.getElementById('floating-chat-messages');
-                    if (!box) return;
-                    const div = document.createElement('div');
-                    div.style.margin = '4px 0';
-                    div.style.textAlign = msg.sender === currentUserName ? 'right' : 'left';
-                    div.innerHTML = `<span style="background: ${msg.sender === currentUserName ? '#dbeafe' : '#f3f4f6'}; padding: 4px 8px; border-radius: 6px; display: inline-block;"><b>${msg.sender}:</b> ${msg.message}</span>`;
-                    box.appendChild(div);
-                    box.scrollTop = box.scrollHeight;
+                    appendMessageToBox(msg.sender, msg.message);
                 }
             });
 
@@ -472,52 +556,6 @@
             });
         }
 
-        // --- ส่วนโปรไฟล์ ---
-        function uploadProfileData() {
-            const statusText = document.getElementById('profile-status-input')?.value || '';
-            const fileInput = document.getElementById('profile-image-file');
-            
-            if (fileInput && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const base64Image = e.target.result;
-                    sendProfileUpdateToServer(base64Image, statusText);
-                };
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                sendProfileUpdateToServer('', statusText);
-            }
-        }
-
-        function sendProfileUpdateToServer(imgData, statusMsg) {
-            if (!currentUserName) {
-                alert('กรุณาเข้าสู่ระบบก่อน');
-                return;
-            }
-
-            fetch('https://chatpidim.onrender.com/api/update-profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: currentUserName,
-                    profileImage: imgData,
-                    statusMessage: statusMsg
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert('อัปเดตโปรไฟล์และสถานะสำเร็จ!');
-                    if(data.user && data.user.profileImage) {
-                        localStorage.setItem('user_profile_img_' + currentUserName, data.user.profileImage);
-                    }
-                } else {
-                    alert(data.message);
-                }
-            });
-        }
-
-        // โหลดข้อมูลเริ่มต้นเมื่อเปิดหน้าเว็บ
         window.onload = function() {
             loadStats();
             loadSongs();
