@@ -216,7 +216,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // ระบบวิดีโอคอล / โทร (WebRTC Signaling พร้อมเปิด-ปิดกล้อง) - [เชื่อมโยงกับฝั่ง Client ครบถ้วน]
+    // ระบบวิดีโอคอล / โทร (WebRTC Signaling พร้อมเปิด-ปิดกล้อง)
     socket.on('call_user', (data) => {
         const targetSocketId = onlineUsers.get(data.toUser);
         if (targetSocketId) {
@@ -224,7 +224,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('make_answer', (data) => {
+    socket.on('answer_call', (data) => {
         const targetSocketId = onlineUsers.get(data.toUser);
         if (targetSocketId) {
             io.to(targetSocketId).emit('call_answered', data);
