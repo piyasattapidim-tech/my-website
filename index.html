@@ -24,10 +24,50 @@
         </div>
     </header>
 
-    <main class="w-full p-4 space-y-4">
+    <main class="w-full p-4 space-y-4 max-w-4xl mx-auto">
 
-        <!-- 1. หน้าหลัก (Home & Feed) -->
+        <!-- 1. หน้าหลัก (Home, Feed & Live Media Rooms) -->
         <section id="mode-home" class="app-mode space-y-4">
+            
+            <!-- ส่วนห้องไลฟ์สด / มีเดียที่ย้ายมาไว้หน้าหลัก -->
+            <div class="bg-white p-4 rounded-lg shadow space-y-3 border border-red-100">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <h2 class="text-base font-bold text-red-600 flex items-center gap-1">🔴 ห้องชมไลฟ์สดและมีเดีย (หน้าหลัก)</h2>
+                    <div id="live-controls" class="hidden space-x-2">
+                        <button onclick="startLiveStream()" class="bg-red-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-red-700 shadow">🎥 เปิดกล้องไลฟ์สด</button>
+                        <button onclick="endLiveStream()" class="bg-gray-500 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-gray-600 shadow">⏹️ ปิดไลฟ์</button>
+                    </div>
+                </div>
+                <p id="live-login-warning" class="text-xs text-red-500">กรุณาเข้าสู่ระบบหากต้องการเปิดไลฟ์สดสตรีมมิ่ง</p>
+
+                <!-- หน้าจอแสดงผลวิดีโอไลฟ์สด (ทั้งฝั่งคนไลฟ์และคนดู) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <span class="text-xs font-bold text-gray-700">📺 จอภาพไลฟ์ของคุณ (Broadcaster)</span>
+                        <div class="bg-black rounded-lg overflow-hidden relative aspect-video flex items-center justify-center border">
+                            <video id="live-preview-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                            <div id="live-placeholder" class="absolute text-white text-xs">คุณยังไม่ได้เปิดกล้องไลฟ์สด</div>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <span class="text-xs font-bold text-gray-700">👀 จอรับชมไลฟ์สดเพื่อน (Viewer Stream)</span>
+                        <div class="bg-black rounded-lg overflow-hidden relative aspect-video flex items-center justify-center border">
+                            <video id="remote-live-video" autoplay playsinline class="w-full h-full object-cover"></video>
+                            <div id="remote-placeholder" class="absolute text-white text-xs">เลือกห้องไลฟ์ด้านล่างเพื่อรับชม</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- รายชื่อห้องไลฟ์ที่กำลังออนแอร์ -->
+                <div class="pt-2">
+                    <h3 class="font-bold text-xs text-gray-700 mb-2">📡 รายชื่อห้องไลฟ์ที่กำลังออนแอร์ตอนนี้:</h3>
+                    <div id="active-lives-list" class="space-y-1.5 text-xs text-gray-600">
+                        <div class="bg-gray-50 p-2 rounded text-center text-gray-400">ยังไม่มีห้องไลฟ์สดในขณะนี้</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ฟีดความเคลื่อนไหวปกติ -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="space-y-3 md:col-span-1">
                     <div class="bg-white p-3 rounded-lg shadow text-xs">
@@ -47,7 +87,7 @@
                     <!-- ช่องสร้างโพสต์ใหม่ -->
                     <div id="create-post-box" class="hidden bg-white p-3 rounded-lg shadow text-xs space-y-2">
                         <h2 class="font-bold text-gray-800 border-b pb-1">✍️ สร้างโพสต์ความเคลื่อนไหว</h2>
-                        <textarea id="post-content-input" placeholder="คุณกำลังทำอะไรอยู่? (กินข้าว, เที่ยว ฯลฯ)" class="w-full border p-2 rounded text-xs h-16"></textarea>
+                        <textarea id="post-content-input" placeholder="คุณกำลังทำอะไรอยู่?..." class="w-full border p-2 rounded text-xs h-16"></textarea>
                         <button onclick="submitPost()" class="w-full bg-blue-600 text-white py-1.5 rounded font-bold text-xs hover:bg-blue-700">📤 โพสต์ลงฟีด</button>
                     </div>
                 </div>
@@ -60,6 +100,7 @@
                             <button onclick="setLayout('grid')" id="btn-layout-grid" class="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">🔲 สี่เหลี่ยม</button>
                         </div>
                     </div>
+
                     <div id="feed-container" class="space-y-3">
                         <p class="text-gray-400 text-sm text-center bg-white p-6 rounded shadow">กำลังโหลดฟีดความเคลื่อนไหว...</p>
                     </div>
@@ -67,54 +108,7 @@
             </div>
         </section>
 
-        <!-- 2. หน้าไลฟ์สด (รองรับ Full Screen และเสียงทุกอุปกรณ์) -->
-        <section id="mode-live" class="app-mode hidden space-y-4 max-w-5xl mx-auto">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                <!-- ฝั่งซ้าย: สำหรับเจ้าของช่องเปิดกล้องไลฟ์ -->
-                <div class="bg-white p-4 rounded-lg shadow space-y-3 border-t-4 border-red-500">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-base font-bold text-gray-800">🔴 พื้นที่เปิดไลฟ์สดของคุณ</h2>
-                        <div id="live-controls" class="hidden space-x-1">
-                            <button onclick="startLiveStream()" class="bg-red-600 text-white px-2.5 py-1 rounded text-xs font-bold hover:bg-red-700">🎥 เปิดไลฟ์</button>
-                            <button onclick="endLiveStream()" class="bg-gray-500 text-white px-2.5 py-1 rounded text-xs font-bold hover:bg-gray-600">⏹️ ปิดไลฟ์</button>
-                        </div>
-                    </div>
-                    <p id="live-login-warning" class="text-xs text-red-500">กรุณาเข้าสู่ระบบหากต้องการเปิดกล้องไลฟ์สด</p>
-
-                    <!-- กล่องแสดงวิดีโอพร้อมปุ่มควบคุมเสียงและเต็มจอของเบราว์เซอร์ -->
-                    <div id="video-wrapper" class="bg-black rounded-lg overflow-hidden relative aspect-video flex items-center justify-center shadow-inner">
-                        <video id="live-preview-video" autoplay playsinline webkit-playsinline controls class="w-full h-full object-cover"></video>
-                        <div id="live-placeholder" class="absolute text-white text-xs text-center px-4 pointer-events-none">กล้องของคุณยังไม่ได้เปิดไลฟ์สด</div>
-                    </div>
-                    <!-- ปุ่มเสริมบังคับขยายเต็มจอ (เผื่อมือถือบางรุ่นไม่แสดงปุ่มบน video) -->
-                    <div class="flex justify-end">
-                        <button onclick="forceFullScreen('live-preview-video')" class="bg-gray-800 text-white text-[11px] px-3 py-1 rounded shadow hover:bg-black">
-                            ⛶ ขยายเต็มจอ (Full Screen)
-                        </button>
-                    </div>
-                </div>
-
-                <!-- ฝั่งขวา: ห้องดูไลฟ์สดสำหรับผู้ชม -->
-                <div class="bg-white p-4 rounded-lg shadow space-y-3 border-t-4 border-blue-500">
-                    <div class="flex justify-between items-center border-b pb-2">
-                        <h2 class="text-base font-bold text-gray-800">📺 ห้องดูไลฟ์สด</h2>
-                        <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">โซนผู้ชม</span>
-                    </div>
-                    <p class="text-xs text-gray-500">เลือกห้องไลฟ์สดเพื่อรับชม ปรับระดับเสียง และกดขยายเต็มจอได้จากทุกอุปกรณ์</p>
-                    
-                    <!-- รายชื่อห้องกำลังไลฟ์ -->
-                    <div id="active-lives-list" class="space-y-2 max-h-[300px] overflow-y-auto pr-1 text-xs">
-                        <div class="bg-gray-50 p-3 rounded border text-center text-gray-400">
-                            ไม่มีห้องไลฟ์สดในขณะนี้
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- 3. หน้าแชท -->
+        <!-- 2. หน้าแชท -->
         <section id="mode-chat" class="app-mode hidden space-y-4">
             <div class="bg-white p-4 rounded-lg shadow">
                 <h2 class="text-lg font-bold text-gray-800">💬 แชทสาธารณะ</h2>
@@ -130,18 +124,19 @@
             </div>
         </section>
 
-        <!-- 4. หน้าเพื่อน -->
+        <!-- 3. หน้าเพื่อนและการติดตาม (Follow & Friends) -->
         <section id="mode-friends" class="app-mode hidden space-y-4 max-w-md mx-auto">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h2 class="text-lg font-bold text-gray-800 mb-2">👥 เพื่อนและการติดตาม</h2>
-                <p class="text-gray-500 text-sm mb-4" id="friend-status-text">กรุณาเข้าสู่ระบบเพื่อดูรายชื่อเพื่อน</p>
+            <div class="bg-white p-4 rounded-lg shadow space-y-3">
+                <h2 class="text-lg font-bold text-gray-800 mb-2">👥 เพื่อนและการติดตาม (Follow)</h2>
+                <p class="text-gray-500 text-sm" id="friend-status-text">กรุณาเข้าสู่ระบบเพื่อจัดการเพื่อนและติดตาม</p>
                 <div id="friend-content" class="hidden space-y-3">
-                    <div id="friend-list" class="space-y-3"></div>
+                    <div class="text-xs font-semibold text-gray-600 border-b pb-1">รายชื่อสมาชิกทั้งหมด (กดติดตาม/เลิกติดตาม):</div>
+                    <div id="friend-list" class="space-y-2"></div>
                 </div>
             </div>
         </section>
 
-        <!-- 5. หน้าโปรไฟล์ -->
+        <!-- 4. หน้าโปรไฟล์ -->
         <section id="mode-profile" class="app-mode hidden space-y-4 max-w-md mx-auto">
             <div class="bg-white p-4 rounded-lg shadow text-center py-6 space-y-3">
                 <div class="w-20 h-20 bg-blue-500 text-white rounded-full mx-auto flex items-center justify-center text-2xl font-bold shadow">
@@ -156,7 +151,7 @@
             </div>
         </section>
 
-        <!-- 6. หน้าตั้งค่า -->
+        <!-- 5. หน้าตั้งค่า -->
         <section id="mode-settings" class="app-mode hidden space-y-4 max-w-md mx-auto">
             <div class="bg-white p-4 rounded-lg shadow space-y-4">
                 <h2 class="text-lg font-bold text-gray-800 mb-2">⚙️ ตั้งค่าระบบ</h2>
@@ -166,34 +161,30 @@
 
     </main>
 
-    <!-- เมนูด้านล่าง -->
+    <!-- เมนูด้านล่าง (ย้ายปุ่มไลฟ์ไปรวมไว้ที่หน้าหลัก ตามโครงสร้างใหม่) -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 shadow-lg z-45">
-        <button onclick="switchMode('home')" id="btn-home" class="text-blue-600 font-medium text-xs flex flex-col items-center">🏠 หน้าหลัก</button>
-        <button onclick="switchMode('live')" id="btn-live" class="text-gray-500 font-medium text-xs flex flex-col items-center">🔴 ไลฟ์สด</button>
+        <button onclick="switchMode('home')" id="btn-home" class="text-blue-600 font-medium text-xs flex flex-col items-center">🏠 หน้าหลัก / ไลฟ์สด</button>
         <button onclick="switchMode('chat')" id="btn-chat" class="text-gray-500 font-medium text-xs flex flex-col items-center">💬 แชท</button>
-        <button onclick="switchMode('friends')" id="btn-friends" class="text-gray-500 font-medium text-xs flex flex-col items-center">👥 เพื่อน</button>
+        <button onclick="switchMode('friends')" id="btn-friends" class="text-gray-500 font-medium text-xs flex flex-col items-center">👥 เพื่อน & ติดตาม</button>
         <button onclick="switchMode('profile')" id="btn-profile" class="text-gray-500 font-medium text-xs flex flex-col items-center">👤 โปรไฟล์</button>
         <button onclick="switchMode('settings')" id="btn-settings" class="text-gray-500 font-medium text-xs flex flex-col items-center">⚙️ ตั้งค่า</button>
     </nav>
 
+    <!-- Modals ต่างๆ (เติมเงิน, ถอนเงิน, ลงทะเบียน, เข้าสู่ระบบ, แชทส่วนตัว) เหมือนเดิม -->
     <!-- Modal เติมเหรียญ FB -->
     <div id="topupModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3 text-center">
-            <h2 class="text-xl font-bold text-gray-800">เติมเหรียญ FB (ฟูบะ)</h2>
+            <h2 class="text-xl font-bold text-gray-800">เติมเหรียญ FB</h2>
             <div class="flex justify-center my-2">
                 <img src="qrcode.jpg" alt="QR Code พี่ดิมตำยำแซ่บ" class="w-48 h-48 object-contain border rounded-lg shadow-sm">
-            </div>
-            <div class="bg-gray-50 p-2 rounded text-xs text-gray-700 border">
-                <strong>พี่ดิมตำยำแซ่บ</strong><br>บัญชี: นาย บัณฑิตธรรม ปิยสัตตา
             </div>
             <div class="text-left space-y-1 pt-1">
                 <label class="block text-xs font-semibold text-gray-600">ระบุยอดเงินที่โอน (บาท):</label>
                 <input type="number" id="topupBaht" value="10" class="w-full border p-2 rounded text-sm text-center font-bold">
-                <p class="text-[10px] text-gray-400 text-center">เรท: 10 บาท = 50 เหรียญ FB</p>
             </div>
             <div class="flex justify-end space-x-2 pt-2">
                 <button type="button" onclick="closeTopupModal()" class="bg-gray-300 px-4 py-2 rounded text-sm">ปิด</button>
-                <button type="button" onclick="submitTopup()" class="bg-amber-500 text-white px-4 py-2 rounded text-sm font-bold hover:bg-amber-600">ยืนยันการโอน</button>
+                <button type="button" onclick="submitTopup()" class="bg-amber-500 text-white px-4 py-2 rounded text-sm font-bold">ยืนยันการโอน</button>
             </div>
         </div>
     </div>
@@ -203,31 +194,14 @@
         <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3 text-xs">
             <h2 class="text-base font-bold text-gray-800 text-center">💵 ถอนเงินสดจากกระเป๋า Wallet</h2>
             <div class="space-y-2">
-                <div>
-                    <label class="font-semibold text-gray-600">ชื่อ-นามสกุลจริง:</label>
-                    <input type="text" id="wd-fullname" placeholder="ระบุชื่อจริง นามสกุลจริง" class="w-full border p-2 rounded">
-                </div>
-                <div>
-                    <label class="font-semibold text-gray-600">ชื่อธนาคาร:</label>
-                    <input type="text" id="wd-bankname" placeholder="เช่น กสิกรไทย, ไทยพาณิชย์" class="w-full border p-2 rounded">
-                </div>
-                <div>
-                    <label class="font-semibold text-gray-600">เลขที่บัญชีธนาคาร:</label>
-                    <input type="text" id="wd-accountnumber" placeholder="เลขที่บัญชี" class="w-full border p-2 rounded">
-                </div>
-                <div>
-                    <label class="font-semibold text-gray-600">เบอร์โทรศัพท์:</label>
-                    <input type="tel" id="wd-phone" placeholder="เบอร์โทรศัพท์ติดต่อ" class="w-full border p-2 rounded">
-                </div>
-                <div>
-                    <label class="font-semibold text-gray-600">จำนวนเหรียญที่ต้องการถอน:</label>
-                    <input type="number" id="wd-coins" value="50" class="w-full border p-2 rounded font-bold text-center">
-                    <p class="text-[10px] text-gray-400 text-center">เรท: 50 เหรียญ = 10 บาท</p>
-                </div>
+                <input type="text" id="wd-fullname" placeholder="ชื่อ-นามสกุลจริง" class="w-full border p-2 rounded">
+                <input type="text" id="wd-bankname" placeholder="ชื่อธนาคาร" class="w-full border p-2 rounded">
+                <input type="text" id="wd-accountnumber" placeholder="เลขที่บัญชี" class="w-full border p-2 rounded">
+                <input type="number" id="wd-coins" value="50" class="w-full border p-2 rounded font-bold text-center">
             </div>
             <div class="flex justify-end space-x-2 pt-2">
                 <button type="button" onclick="closeWithdrawModal()" class="bg-gray-300 px-3 py-1.5 rounded">ยกเลิก</button>
-                <button type="button" onclick="submitWithdraw()" class="bg-green-600 text-white px-3 py-1.5 rounded font-bold hover:bg-green-700">ยืนยันการถอนเงิน</button>
+                <button type="button" onclick="submitWithdraw()" class="bg-green-600 text-white px-3 py-1.5 rounded font-bold">ยืนยันถอนเงิน</button>
             </div>
         </div>
     </div>
@@ -236,10 +210,8 @@
     <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3">
             <h2 class="text-xl font-bold text-gray-800">ลงทะเบียนสมาชิก</h2>
-            <input type="text" id="reg-name" required class="w-full border p-2 rounded text-sm" placeholder="ชื่อผู้ใช้">
-            <input type="password" id="reg-pass" required class="w-full border p-2 rounded text-sm" placeholder="รหัสผ่าน">
-            <input type="email" id="reg-email" class="w-full border p-2 rounded text-sm" placeholder="อีเมล">
-            <input type="tel" id="reg-phone" class="w-full border p-2 rounded text-sm" placeholder="เบอร์โทรศัพท์">
+            <input type="text" id="reg-name" class="w-full border p-2 rounded text-sm" placeholder="ชื่อผู้ใช้">
+            <input type="password" id="reg-pass" class="w-full border p-2 rounded text-sm" placeholder="รหัสผ่าน">
             <div class="flex justify-end space-x-2 pt-2">
                 <button type="button" onclick="closeRegisterModal()" class="bg-gray-300 px-4 py-2 rounded text-sm">ยกเลิก</button>
                 <button type="button" onclick="handleRegister()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm">ยืนยัน</button>
@@ -250,8 +222,8 @@
     <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3">
             <h2 class="text-xl font-bold text-gray-800">เข้าสู่ระบบ</h2>
-            <input type="text" id="login-name" required class="w-full border p-2 rounded text-sm" placeholder="ชื่อผู้ใช้">
-            <input type="password" id="login-pass" required class="w-full border p-2 rounded text-sm" placeholder="รหัสผ่าน">
+            <input type="text" id="login-name" class="w-full border p-2 rounded text-sm" placeholder="ชื่อผู้ใช้">
+            <input type="password" id="login-pass" class="w-full border p-2 rounded text-sm" placeholder="รหัสผ่าน">
             <div class="flex justify-end space-x-2 pt-2">
                 <button type="button" onclick="closeLoginModal()" class="bg-gray-300 px-4 py-2 rounded text-sm">ยกเลิก</button>
                 <button type="button" onclick="handleLogin()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm">เข้าสู่ระบบ</button>
@@ -279,6 +251,10 @@
 
         let currentUserName = localStorage.getItem('currentUserName') || '';
         let currentLayout = 'vertical';
+        let localStream = null;
+        let peerConnection = null;
+
+        const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         window.addEventListener('load', () => {
             if (currentUserName) {
@@ -309,23 +285,7 @@
             loadPosts();
         }
 
-        // ฟังก์ชันบังคับเปิดโหมดเต็มจอ รองรับทั้งมือถือและคอมพิวเตอร์
-        function forceFullScreen(videoId) {
-            const videoElem = document.getElementById(videoId);
-            if (!videoElem) return;
-            if (videoElem.requestFullscreen) {
-                videoElem.requestFullscreen();
-            } else if (videoElem.webkitRequestFullscreen) { /* Safari / iOS บางรุ่น */
-                videoElem.webkitRequestFullscreen();
-            } else if (videoElem.msRequestFullscreen) {
-                videoElem.msRequestFullscreen();
-            } else if (videoElem.webkitEnterFullscreen) { /* iOS iPhone เฉพาะตัววิดีโอ */
-                videoElem.webkitEnterFullscreen();
-            } else {
-                alert('อุปกรณ์นี้อาจไม่รองรับการขยายเต็มจออัตโนมัติ กรุณากดปุ่มขยายที่ตัวเล่นวิดีโอโดยตรง');
-            }
-        }
-
+        // Modals
         function openRegisterModal() { document.getElementById('registerModal').classList.remove('hidden'); }
         function closeRegisterModal() { document.getElementById('registerModal').classList.add('hidden'); }
         function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
@@ -333,7 +293,7 @@
         function openTopupModal() { document.getElementById('topupModal').classList.remove('hidden'); }
         function closeTopupModal() { document.getElementById('topupModal').classList.add('hidden'); }
         function openWithdrawModal() { 
-            if (!currentUserName) { alert('กรุณาเข้าสู่ระบบก่อนทำรายการถอนเงิน'); openLoginModal(); return; }
+            if (!currentUserName) { alert('กรุณาเข้าสู่ระบบก่อนถอนเงิน'); openLoginModal(); return; }
             document.getElementById('withdrawModal').classList.remove('hidden'); 
         }
         function closeWithdrawModal() { document.getElementById('withdrawModal').classList.add('hidden'); }
@@ -357,18 +317,12 @@
             const fullName = document.getElementById('wd-fullname').value.trim();
             const bankName = document.getElementById('wd-bankname').value.trim();
             const accountNumber = document.getElementById('wd-accountnumber').value.trim();
-            const phone = document.getElementById('wd-phone').value.trim();
             const amountCoins = Number(document.getElementById('wd-coins').value);
-
-            if (!fullName || !bankName || !accountNumber) {
-                alert('กรุณากรอกข้อมูลบัญชีให้ครบถ้วน');
-                return;
-            }
 
             const res = await fetch('/api/withdraw', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: currentUserName, fullName, bankName, accountNumber, phone, amountCoins })
+                body: JSON.stringify({ name: currentUserName, fullName, bankName, accountNumber, amountCoins })
             });
             const data = await res.json();
             alert(data.message);
@@ -391,16 +345,11 @@
         function handleRegister() {
             const name = document.getElementById('reg-name').value.trim();
             const password = document.getElementById('reg-pass').value;
-            const email = document.getElementById('reg-email').value;
-            const phone = document.getElementById('reg-phone').value;
-
             fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, password, email, phone })
-            })
-            .then(res => res.json())
-            .then(data => {
+                body: JSON.stringify({ name, password })
+            }).then(res => res.json()).then(data => {
                 alert(data.message);
                 if (data.success) { closeRegisterModal(); openLoginModal(); }
             });
@@ -409,14 +358,11 @@
         function handleLogin() {
             const name = document.getElementById('login-name').value.trim();
             const password = document.getElementById('login-pass').value;
-
             fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, password })
-            })
-            .then(res => res.json())
-            .then(data => {
+            }).then(res => res.json()).then(data => {
                 if (data.success) {
                     currentUserName = name;
                     localStorage.setItem('currentUserName', name);
@@ -467,18 +413,11 @@
             const posts = await res.json();
             const container = document.getElementById('feed-container');
             container.innerHTML = '';
-
             if (posts.length === 0) {
                 container.innerHTML = `<p class="text-gray-400 text-sm text-center bg-white p-6 rounded shadow">ยังไม่มีโพสต์ในขณะนี้</p>`;
                 return;
             }
-
-            if (currentLayout === 'grid') {
-                container.className = "grid grid-cols-1 sm:grid-cols-2 gap-3";
-            } else {
-                container.className = "space-y-3";
-            }
-
+            container.className = currentLayout === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : "space-y-3";
             posts.forEach(p => {
                 const card = document.createElement('div');
                 card.className = "bg-white p-3 rounded-lg shadow text-xs space-y-2 border";
@@ -489,48 +428,45 @@
                     </div>
                     <p class="text-gray-700 text-sm">${p.content}</p>
                     <div class="flex justify-between items-center pt-2 border-t">
-                        <span class="text-pink-600 font-bold">🌸 ดอกไม้สนับสนุน: <span id="flower-count-${p._id}">${p.flowersCount || 0}</span></span>
-                        <button onclick="sendFlowerToPost('${p.author}', '${p._id}')" class="bg-pink-500 text-white px-2.5 py-1 rounded font-bold hover:bg-pink-600">🌷 ให้ดอกไม้ (10 เหรียญ)</button>
+                        <span class="text-pink-600 font-bold">🌸 ดอกไม้: <span id="flower-count-${p._id}">${p.flowersCount || 0}</span></span>
+                        <button onclick="sendFlowerToPost('${p.author}')" class="bg-pink-500 text-white px-2.5 py-1 rounded font-bold hover:bg-pink-600">🌷 ให้ดอกไม้ (10 เหรียญ)</button>
                     </div>
                 `;
                 container.appendChild(card);
             });
         }
 
-        async function sendFlowerToPost(receiverName, postId) {
-            if (!currentUserName) { alert('กรุณาเข้าสู่ระบบก่อนส่งดอกไม้'); openLoginModal(); return; }
-            if (currentUserName === receiverName) { alert('ไม่สามารถส่งดอกไม้ให้ตัวเองได้'); return; }
-
+        async function sendFlowerToPost(receiverName) {
+            if (!currentUserName) { alert('กรุณาเข้าสู่ระบบก่อน'); openLoginModal(); return; }
             const res = await fetch('/api/send-gift', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ senderName: currentUserName, receiverName, coinAmount: 10 })
             });
             const data = await res.json();
-            alert(data.message || 'ส่งดอกไม้สำเร็จ!');
+            alert(data.message || 'สำเร็จ!');
             if (data.success) {
                 document.getElementById('header-user-coins').innerText = data.senderCoins;
                 loadPosts();
             }
         }
 
-        let localLiveStream = null;
+        // ระบบไลฟ์สดสตรีมมิ่ง & WebRTC
         async function startLiveStream() {
             try {
-                localLiveStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                const videoElem = document.getElementById('live-preview-video');
-                videoElem.srcObject = localLiveStream;
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('live-preview-video').srcObject = localStream;
                 document.getElementById('live-placeholder').style.display = 'none';
                 if (window.socket) window.socket.emit('start_live', currentUserName);
-                alert('เริ่มไลฟ์สดแล้ว!');
+                alert('เริ่มเปิดไลฟ์สดแล้ว!');
             } catch (e) {
-                alert('ไม่สามารถเปิดกล้องเพื่อไลฟ์สดได้ กรุณาอนุญาตการใช้งานกล้องและไมโครโฟน');
+                alert('ไม่สามารถเปิดกล้องได้');
             }
         }
 
         function endLiveStream() {
-            if (localLiveStream) {
-                localLiveStream.getTracks().forEach(t => t.stop());
+            if (localStream) {
+                localStream.getTracks().forEach(t => t.stop());
                 document.getElementById('live-preview-video').srcObject = null;
                 document.getElementById('live-placeholder').style.display = 'block';
                 if (window.socket) window.socket.emit('end_live', currentUserName);
@@ -538,45 +474,92 @@
             }
         }
 
+        function watchLiveStream(broadcasterName) {
+            alert(`กำลังเชื่อมต่อเข้ารับชมไลฟ์ของ ${broadcasterName}`);
+            if (window.socket) {
+                window.socket.emit('join_live_room', { broadcaster: broadcasterName, viewer: currentUserName });
+            }
+        }
+
+        // ระบบเพื่อนและติดตาม (Follow / Friend System)
+        async function loadFriendsList() {
+            const res = await fetch('/api/users');
+            const users = await res.json();
+            const list = document.getElementById('friend-list');
+            list.innerHTML = '';
+            users.filter(u => u.name !== currentUserName).forEach(u => {
+                const isFollowing = u.followers && u.followers.includes(currentUserName);
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between bg-gray-50 p-2 rounded border text-sm";
+                row.innerHTML = `
+                    <span>👤 ${u.name} ${u.statusMessage ? '(' + u.statusMessage + ')' : ''}</span>
+                    <div class="space-x-1">
+                        <button onclick="toggleFollow('${u.name}')" class="${isFollowing ? 'bg-gray-400' : 'bg-green-600'} text-white px-2.5 py-1 rounded text-xs">${isFollowing ? 'เลิกติดตาม' : '➕ ติดตาม'}</button>
+                        <button onclick="openFloatingChat('${u.name}')" class="bg-blue-500 text-white px-2.5 py-1 rounded text-xs">💬 แชท</button>
+                    </div>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        async function toggleFollow(targetUser) {
+            if (!currentUserName) { openLoginModal(); return; }
+            const res = await fetch('/api/follow', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userName: currentUserName, targetUser })
+            });
+            const data = await res.json();
+            if (data.success) {
+                loadFriendsList();
+            }
+        }
+
+        // Socket Events สำหรับสตรีมและรายชื่อไลฟ์
         if (window.socket) {
             window.socket.on('live_streams_update', (lives) => {
                 const list = document.getElementById('active-lives-list');
                 if (lives.length === 0) {
-                    list.innerHTML = `<div class="bg-gray-50 p-3 rounded border text-center text-gray-400">ไม่มีห้องไลฟ์สดในขณะนี้</div>`;
+                    list.innerHTML = '<div class="bg-gray-50 p-2 rounded text-center text-gray-400">ยังไม่มีห้องไลฟ์สดในขณะนี้</div>';
                     return;
                 }
                 list.innerHTML = '';
                 lives.forEach(name => {
                     const div = document.createElement('div');
-                    div.className = "flex justify-between items-center bg-gray-50 p-3 rounded border shadow-sm";
-                    div.innerHTML = `
-                        <div>
-                            <span class="font-bold text-gray-800 text-sm">🔴 ห้องไลฟ์สด: ${name}</span>
-                            <p class="text-[10px] text-gray-500">กำลังออนแอร์ขณะนี้</p>
-                        </div>
-                        <button onclick="sendFlowerToPost('${name}', 'live')" class="bg-pink-500 text-white px-3 py-1.5 rounded font-bold hover:bg-pink-600 shadow-sm text-xs">🌷 ส่งดอกไม้</button>
-                    `;
+                    div.className = "flex justify-between items-center bg-gray-50 p-2 rounded border";
+                    div.innerHTML = `<span>🔴 ไลฟ์ของห้อง <b>${name}</b></span> <button onclick="watchLiveStream('${name}')" class="bg-red-600 text-white px-3 py-1 rounded font-bold text-xs hover:bg-red-700">📺 เข้าชมไลฟ์</button>`;
                     list.appendChild(div);
                 });
             });
-        }
 
-        function loadStats() {
-            fetch('/api/stats').then(res => res.json()).then(data => {
-                if(data.totalMembers !== undefined) document.getElementById('stat-total-members').innerText = data.totalMembers;
+            // WebRTC Signaling สำหรับรับภาพไลฟ์สด
+            window.socket.on('offer', async (data) => {
+                peerConnection = new RTCPeerConnection(rtcConfig);
+                peerConnection.ontrack = (event) => {
+                    document.getElementById('remote-live-video').srcObject = event.streams[0];
+                    document.getElementById('remote-placeholder').style.display = 'none';
+                };
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        window.socket.emit('ice-candidate', { candidate: event.candidate, to: data.from });
+                    }
+                };
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                window.socket.emit('answer', { answer, to: data.from });
             });
-        }
 
-        function loadFriendsList() {
-            fetch('/api/users').then(res => res.json()).then(users => {
-                const list = document.getElementById('friend-list');
-                list.innerHTML = '';
-                users.filter(u => u.name !== currentUserName).forEach(f => {
-                    const row = document.createElement('div');
-                    row.className = "flex items-center justify-between bg-gray-50 p-2 rounded border text-sm";
-                    row.innerHTML = `<span>${f.name}</span> <button onclick="openFloatingChat('${f.name}')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs">💬 แชท</button>`;
-                    list.appendChild(row);
-                });
+            window.socket.on('answer', async (data) => {
+                if (peerConnection) {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                }
+            });
+
+            window.socket.on('ice-candidate', async (data) => {
+                if (peerConnection && data.candidate) {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                }
             });
         }
 
@@ -587,9 +570,7 @@
             document.getElementById('floating-chat-window').style.display = 'block';
             loadPrivateMessages(username);
         }
-        function closeFloatingChat() {
-            document.getElementById('floating-chat-window').style.display = 'none';
-        }
+        function closeFloatingChat() { document.getElementById('floating-chat-window').style.display = 'none'; }
         function loadPrivateMessages(targetUser) {
             if (!currentUserName) return;
             fetch(`/api/private-messages/${currentUserName}/${targetUser}`).then(res => res.json()).then(msgs => {
