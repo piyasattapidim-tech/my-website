@@ -53,7 +53,6 @@
                 </div>
 
                 <div class="md:col-span-2 space-y-3">
-                    <!-- ปุ่มสลับมุมมองฟีด (แนวตั้ง / สี่เหลี่ยม Grid) -->
                     <div class="bg-white p-2 rounded-lg shadow flex justify-between items-center">
                         <span class="font-bold text-xs text-gray-700">📌 ฟีดความเคลื่อนไหวสาธารณะ</span>
                         <div class="space-x-1">
@@ -61,8 +60,6 @@
                             <button onclick="setLayout('grid')" id="btn-layout-grid" class="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">🔲 สี่เหลี่ยม</button>
                         </div>
                     </div>
-
-                    <!-- พื้นแสดงโพสต์ -->
                     <div id="feed-container" class="space-y-3">
                         <p class="text-gray-400 text-sm text-center bg-white p-6 rounded shadow">กำลังโหลดฟีดความเคลื่อนไหว...</p>
                     </div>
@@ -70,30 +67,50 @@
             </div>
         </section>
 
-        <!-- 2. หน้าไลฟ์สด (Live Stream & Gifting) -->
-        <section id="mode-live" class="app-mode hidden space-y-4 max-w-2xl mx-auto">
-            <div class="bg-white p-4 rounded-lg shadow space-y-3 text-center">
-                <h2 class="text-xl font-bold text-gray-800">🔴 ศูนย์รวมห้องไลฟ์สด</h2>
-                <p class="text-xs text-gray-500">รับชมไลฟ์สดและส่งดอกไม้ให้กำลังใจเพื่อนๆ ได้เลย!</p>
+        <!-- 2. หน้าไลฟ์สด (รองรับ Full Screen และเสียงทุกอุปกรณ์) -->
+        <section id="mode-live" class="app-mode hidden space-y-4 max-w-5xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
-                <div id="live-controls" class="hidden space-x-2">
-                    <button onclick="startLiveStream()" class="bg-red-600 text-white px-4 py-2 rounded text-xs font-bold hover:bg-red-700">🎥 เปิดกล้องไลฟ์สดของคุณ</button>
-                    <button onclick="endLiveStream()" class="bg-gray-500 text-white px-4 py-2 rounded text-xs font-bold hover:bg-gray-600">⏹️ ปิดไลฟ์</button>
-                </div>
-                <p id="live-login-warning" class="text-xs text-red-500">กรุณาเข้าสู่ระบบหากต้องการเปิดไลฟ์สด</p>
+                <!-- ฝั่งซ้าย: สำหรับเจ้าของช่องเปิดกล้องไลฟ์ -->
+                <div class="bg-white p-4 rounded-lg shadow space-y-3 border-t-4 border-red-500">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-base font-bold text-gray-800">🔴 พื้นที่เปิดไลฟ์สดของคุณ</h2>
+                        <div id="live-controls" class="hidden space-x-1">
+                            <button onclick="startLiveStream()" class="bg-red-600 text-white px-2.5 py-1 rounded text-xs font-bold hover:bg-red-700">🎥 เปิดไลฟ์</button>
+                            <button onclick="endLiveStream()" class="bg-gray-500 text-white px-2.5 py-1 rounded text-xs font-bold hover:bg-gray-600">⏹️ ปิดไลฟ์</button>
+                        </div>
+                    </div>
+                    <p id="live-login-warning" class="text-xs text-red-500">กรุณาเข้าสู่ระบบหากต้องการเปิดกล้องไลฟ์สด</p>
 
-                <div class="bg-black rounded-lg overflow-hidden relative aspect-video flex items-center justify-center">
-                    <video id="live-preview-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
-                    <div id="live-placeholder" class="absolute text-white text-sm">ยังไม่มีการเปิดไลฟ์ในขณะนี้</div>
-                </div>
-
-                <!-- รายชื่อห้องไลฟ์ที่กำลังออนไลน์ -->
-                <div class="border-t pt-3 text-left">
-                    <h3 class="font-bold text-xs text-gray-700 mb-2">📡 ห้องไลฟ์ที่กำลังออนแอร์:</h3>
-                    <div id="active-lives-list" class="space-y-1 text-xs text-gray-500">
-                        ไม่มีไลฟ์สดในขณะนี้
+                    <!-- กล่องแสดงวิดีโอพร้อมปุ่มควบคุมเสียงและเต็มจอของเบราว์เซอร์ -->
+                    <div id="video-wrapper" class="bg-black rounded-lg overflow-hidden relative aspect-video flex items-center justify-center shadow-inner">
+                        <video id="live-preview-video" autoplay playsinline webkit-playsinline controls class="w-full h-full object-cover"></video>
+                        <div id="live-placeholder" class="absolute text-white text-xs text-center px-4 pointer-events-none">กล้องของคุณยังไม่ได้เปิดไลฟ์สด</div>
+                    </div>
+                    <!-- ปุ่มเสริมบังคับขยายเต็มจอ (เผื่อมือถือบางรุ่นไม่แสดงปุ่มบน video) -->
+                    <div class="flex justify-end">
+                        <button onclick="forceFullScreen('live-preview-video')" class="bg-gray-800 text-white text-[11px] px-3 py-1 rounded shadow hover:bg-black">
+                            ⛶ ขยายเต็มจอ (Full Screen)
+                        </button>
                     </div>
                 </div>
+
+                <!-- ฝั่งขวา: ห้องดูไลฟ์สดสำหรับผู้ชม -->
+                <div class="bg-white p-4 rounded-lg shadow space-y-3 border-t-4 border-blue-500">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <h2 class="text-base font-bold text-gray-800">📺 ห้องดูไลฟ์สด</h2>
+                        <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">โซนผู้ชม</span>
+                    </div>
+                    <p class="text-xs text-gray-500">เลือกห้องไลฟ์สดเพื่อรับชม ปรับระดับเสียง และกดขยายเต็มจอได้จากทุกอุปกรณ์</p>
+                    
+                    <!-- รายชื่อห้องกำลังไลฟ์ -->
+                    <div id="active-lives-list" class="space-y-2 max-h-[300px] overflow-y-auto pr-1 text-xs">
+                        <div class="bg-gray-50 p-3 rounded border text-center text-gray-400">
+                            ไม่มีห้องไลฟ์สดในขณะนี้
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </section>
 
@@ -219,7 +236,7 @@
     <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3">
             <h2 class="text-xl font-bold text-gray-800">ลงทะเบียนสมาชิก</h2>
-            <input type="text" id="reg-name" required class="w-full border p-2 rounded text-sm" placeholder="ชื่อผู้ใช้ (เช่น UserA, Userจ, Userด)">
+            <input type="text" id="reg-name" required class="w-full border p-2 rounded text-sm" placeholder="ชื่อผู้ใช้">
             <input type="password" id="reg-pass" required class="w-full border p-2 rounded text-sm" placeholder="รหัสผ่าน">
             <input type="email" id="reg-email" class="w-full border p-2 rounded text-sm" placeholder="อีเมล">
             <input type="tel" id="reg-phone" class="w-full border p-2 rounded text-sm" placeholder="เบอร์โทรศัพท์">
@@ -292,7 +309,23 @@
             loadPosts();
         }
 
-        // จัดการ Modals
+        // ฟังก์ชันบังคับเปิดโหมดเต็มจอ รองรับทั้งมือถือและคอมพิวเตอร์
+        function forceFullScreen(videoId) {
+            const videoElem = document.getElementById(videoId);
+            if (!videoElem) return;
+            if (videoElem.requestFullscreen) {
+                videoElem.requestFullscreen();
+            } else if (videoElem.webkitRequestFullscreen) { /* Safari / iOS บางรุ่น */
+                videoElem.webkitRequestFullscreen();
+            } else if (videoElem.msRequestFullscreen) {
+                videoElem.msRequestFullscreen();
+            } else if (videoElem.webkitEnterFullscreen) { /* iOS iPhone เฉพาะตัววิดีโอ */
+                videoElem.webkitEnterFullscreen();
+            } else {
+                alert('อุปกรณ์นี้อาจไม่รองรับการขยายเต็มจออัตโนมัติ กรุณากดปุ่มขยายที่ตัวเล่นวิดีโอโดยตรง');
+            }
+        }
+
         function openRegisterModal() { document.getElementById('registerModal').classList.remove('hidden'); }
         function closeRegisterModal() { document.getElementById('registerModal').classList.add('hidden'); }
         function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
@@ -466,7 +499,7 @@
 
         async function sendFlowerToPost(receiverName, postId) {
             if (!currentUserName) { alert('กรุณาเข้าสู่ระบบก่อนส่งดอกไม้'); openLoginModal(); return; }
-            if (currentUserName === receiverName) { alert('ไม่สามารถส่งดอกไม้ให้โพสต์ตัวเองได้'); return; }
+            if (currentUserName === receiverName) { alert('ไม่สามารถส่งดอกไม้ให้ตัวเองได้'); return; }
 
             const res = await fetch('/api/send-gift', {
                 method: 'POST',
@@ -485,12 +518,13 @@
         async function startLiveStream() {
             try {
                 localLiveStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('live-preview-video').srcObject = localLiveStream;
+                const videoElem = document.getElementById('live-preview-video');
+                videoElem.srcObject = localLiveStream;
                 document.getElementById('live-placeholder').style.display = 'none';
                 if (window.socket) window.socket.emit('start_live', currentUserName);
                 alert('เริ่มไลฟ์สดแล้ว!');
             } catch (e) {
-                alert('ไม่สามารถเปิดกล้องเพื่อไลฟ์สดได้');
+                alert('ไม่สามารถเปิดกล้องเพื่อไลฟ์สดได้ กรุณาอนุญาตการใช้งานกล้องและไมโครโฟน');
             }
         }
 
@@ -508,14 +542,20 @@
             window.socket.on('live_streams_update', (lives) => {
                 const list = document.getElementById('active-lives-list');
                 if (lives.length === 0) {
-                    list.innerHTML = 'ไม่มีไลฟ์สดในขณะนี้';
+                    list.innerHTML = `<div class="bg-gray-50 p-3 rounded border text-center text-gray-400">ไม่มีห้องไลฟ์สดในขณะนี้</div>`;
                     return;
                 }
                 list.innerHTML = '';
                 lives.forEach(name => {
                     const div = document.createElement('div');
-                    div.className = "flex justify-between items-center bg-gray-50 p-2 rounded border";
-                    div.innerHTML = `<span>🔴 ไลฟ์ของ <b>${name}</b></span> <button onclick="sendFlowerToPost('${name}', 'live')" class="bg-pink-500 text-white px-2 py-0.5 rounded">🌷 ส่งดอกไม้</button>`;
+                    div.className = "flex justify-between items-center bg-gray-50 p-3 rounded border shadow-sm";
+                    div.innerHTML = `
+                        <div>
+                            <span class="font-bold text-gray-800 text-sm">🔴 ห้องไลฟ์สด: ${name}</span>
+                            <p class="text-[10px] text-gray-500">กำลังออนแอร์ขณะนี้</p>
+                        </div>
+                        <button onclick="sendFlowerToPost('${name}', 'live')" class="bg-pink-500 text-white px-3 py-1.5 rounded font-bold hover:bg-pink-600 shadow-sm text-xs">🌷 ส่งดอกไม้</button>
+                    `;
                     list.appendChild(div);
                 });
             });
