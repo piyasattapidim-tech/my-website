@@ -142,7 +142,7 @@
         <button onclick="switchMode('settings')" id="btn-settings" class="text-gray-500 font-medium text-xs flex flex-col items-center">⚙️ ตั้งค่า</button>
     </nav>
 
-    <!-- Modal ลงทะเบียน / เข้าสู่ระบบ / ลืมรหัสผ่าน -->
+    <!-- Modal ลงทะเบียน / เข้าสู่ระบบ -->
     <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3">
             <h2 class="text-xl font-bold text-gray-800">ลงทะเบียนสมาชิก</h2>
@@ -208,12 +208,12 @@
     </div>
 
     <!-- ==================== ระบบ Socket.io, เสียงเตือน, Pop-up และ WebRTC ==================== -->
-    <script src="https://chatpidim.onrender.com/socket.io/socket.io.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io('https://chatpidim.onrender.com');
+        const socket = io(); // เชื่อมต่อกับโฮสต์ปัจจุบันโดยอัตโนมัติ ไม่ติดปัญหา 404
         window.socket = socket;
 
-        // 1. ฟังก์ชันเล่นเสียงเตือน (Web Audio API)
+        // 1. ฟังก์ชันเล่นเสียงเตือน (Web Audio API - ใช้เสียงสังเคราะห์ ทำงานได้ทันทีไม่ต้องโหลดไฟล์ภายนอก)
         function playNotificationSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -261,7 +261,7 @@
             }
         });
 
-        // ==================== ระบบ WebRTC วิดีโอคอล (เห็นหน้าทั้ง 2 ฝั่ง) ====================
+        // ==================== ระบบ WebRTC วิดีโอคอล ==================== -->
         let localStream = null;
         let peerConnection = null;
         let isCameraOn = true;
@@ -449,7 +449,7 @@
 
             if (!name || !password) { alert('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน'); return; }
 
-            fetch('https://chatpidim.onrender.com/api/register', {
+            fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, password, email, phone, securityQuestion, securityAnswer })
@@ -468,7 +468,7 @@
             const name = document.getElementById('login-name').value.trim();
             const password = document.getElementById('login-pass').value;
 
-            fetch('https://chatpidim.onrender.com/api/login', {
+            fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, password })
@@ -501,7 +501,7 @@
         }
 
         function loadStats() {
-            fetch('https://chatpidim.onrender.com/api/stats')
+            fetch('/api/stats')
                 .then(res => res.json())
                 .then(data => {
                     if(data.totalMembers !== undefined) document.getElementById('stat-total-members').innerText = data.totalMembers;
@@ -509,7 +509,7 @@
         }
 
         function loadFriendsList() {
-            fetch('https://chatpidim.onrender.com/api/users')
+            fetch('/api/users')
                 .then(res => res.json())
                 .then(users => {
                     const listContainer = document.getElementById('friend-list');
@@ -555,7 +555,7 @@
 
         function loadPrivateMessages(targetUser) {
             if (!currentUserName) return;
-            fetch(`https://chatpidim.onrender.com/api/private-messages/${currentUserName}/${targetUser}`)
+            fetch(`/api/private-messages/${currentUserName}/${targetUser}`)
                 .then(res => res.json())
                 .then(msgs => {
                     const box = document.getElementById('floating-chat-messages');
@@ -584,6 +584,9 @@
         if (window.socket) {
             window.socket.on('receive_private_message', (msg) => {
                 if (activeChatUser && (msg.sender === activeChatUser || msg.receiver === activeChatUser)) {
+                    playNotificationSound();
+                    showNewMessagePopup("ข้อความส่วนตัวจาก " + msg.sender, msg.message);
+
                     const box = document.getElementById('floating-chat-messages');
                     const div = document.createElement('div');
                     div.style.margin = '4px 0';
@@ -612,11 +615,10 @@
                 radioContainer.classList.remove('hidden');
             }
         }
-        function uploadSong() { /* โหมดเพลงเดิม */ }
-        function loadSongs() { /* โหมดเพลงเดิม */ }
+        function uploadSong() {}
+        function loadSongs() {}
         function renderSongList() {}
         function filterSongs() {}
-        function playMedia() {}
         function uploadProfileData() {}
     </script>
 </body>
