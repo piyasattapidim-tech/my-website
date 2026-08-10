@@ -11,6 +11,16 @@
     <header class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
         <h1 class="text-xl font-bold">ยินดีต้อนรับแชทพี่ดิม ChatPidim</h1>
         <div class="flex items-center space-x-3">
+            <!-- ปุ่มไลฟ์ และ ดูไลฟ์ (ไอคอนรูปน้ำขนาดเล็ก) ใกล้กับกระเป๋าเหรียญ -->
+            <div class="flex items-center space-x-1">
+                <button onclick="openLiveModal()" class="bg-blue-500 hover:bg-blue-400 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow border border-blue-400" title="เริ่มไลฟ์สด">
+                    💧 ไลฟ์
+                </button>
+                <button onclick="openWatchLiveModal()" class="bg-teal-500 hover:bg-teal-400 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow border border-teal-400" title="ดูไลฟ์สด">
+                    💧 ดูไลฟ์
+                </button>
+            </div>
+
             <!-- ส่วนแสดงกระเป๋าเหรียญ FB -->
             <div id="wallet-badge" class="hidden bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow">
                 <span>💰 <span id="header-user-coins">0</span> เหรียญ</span>
@@ -158,7 +168,6 @@
             <h2 class="text-xl font-bold text-gray-800">เติมเหรียญ FB (ฟูบะ)</h2>
             <p class="text-xs text-gray-500">สแกน QR Code ผ่านแอปธนาคารเพื่อโอนเงินซื้อเหรียญ</p>
             
-            <!-- รูป QR Code ที่พี่ดิมส่งมา (ตั้งชื่อไฟล์ว่า qrcode.jpg ไว้ในโฟลเดอร์เดียวกัน) -->
             <div class="flex justify-center my-2">
                 <img src="qrcode.jpg" alt="QR Code พี่ดิมตำยำแซ่บ" class="w-48 h-48 object-contain border rounded-lg shadow-sm">
             </div>
@@ -177,6 +186,34 @@
             <div class="flex justify-end space-x-2 pt-2">
                 <button type="button" onclick="closeTopupModal()" class="bg-gray-300 px-4 py-2 rounded text-sm">ปิด</button>
                 <button type="button" onclick="submitTopup()" class="bg-amber-500 text-white px-4 py-2 rounded text-sm font-bold hover:bg-amber-600">ยืนยันการโอน / รับเหรียญ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal สำหรับตั้งค่าเริ่มไลฟ์สด (Popup สำหรับปุ่ม ไลฟ์) -->
+    <div id="liveModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3 text-xs">
+            <h2 class="text-base font-bold text-gray-800 text-center">💧 เริ่มตั้งค่าไลฟ์สด</h2>
+            <div class="space-y-2">
+                <label class="block font-semibold text-gray-600">ชื่อช่อง / หัวข้อไลฟ์:</label>
+                <input type="text" id="live-channel-name" placeholder="เช่น ห้องพูดคุยสบายๆ ของพี่ดิม" class="w-full border p-2 rounded text-xs">
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button type="button" onclick="closeLiveModal()" class="bg-gray-300 px-3 py-1.5 rounded">ยกเลิก</button>
+                <button type="button" onclick="startBroadcasting()" class="bg-blue-600 text-white px-3 py-1.5 rounded font-bold">เปิดห้องไลฟ์</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal สำหรับดูรายการไลฟ์สด (Popup สำหรับปุ่ม ดูไลฟ์) -->
+    <div id="watchLiveModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-md p-6 rounded-lg shadow-lg relative space-y-3 text-xs">
+            <h2 class="text-base font-bold text-gray-800 text-center">📺 สื่อมีเดีย: ช่องไลฟ์สดทั้งหมด</h2>
+            <div id="live-channels-container" class="space-y-2 max-h-60 overflow-y-auto">
+                <p class="text-gray-400 text-center py-4">ยังไม่มีสมาชิกเปิดไลฟ์สดในขณะนี้</p>
+            </div>
+            <div class="flex justify-end pt-2">
+                <button type="button" onclick="closeWatchLiveModal()" class="bg-gray-300 px-3 py-1.5 rounded">ปิด</button>
             </div>
         </div>
     </div>
@@ -450,6 +487,29 @@
                 onlineUsersList = users;
                 updateFriendsStatusUI();
             });
+
+            // รับข้อมูลรายการช่องไลฟ์สด
+            window.socket.on('live_channels_list', (channels) => {
+                const container = document.getElementById('live-channels-container');
+                if (!container) return;
+                container.innerHTML = '';
+                if (channels.length === 0) {
+                    container.innerHTML = `<p class="text-gray-400 text-center py-4">ยังไม่มีสมาชิกเปิดไลฟ์สดในขณะนี้</p>`;
+                    return;
+                }
+                channels.forEach(ch => {
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between bg-gray-50 p-2 rounded border";
+                    div.innerHTML = `
+                        <div>
+                            <span class="font-bold text-blue-600">👤 ${ch.username}</span>
+                            <div class="text-gray-600">${ch.channelName}</div>
+                        </div>
+                        <button onclick="watchLiveStream('${ch.username}', '${ch.channelName}')" class="bg-teal-500 text-white px-2.5 py-1 rounded text-xs font-bold">▶️ ดูไลฟ์</button>
+                    `;
+                    container.appendChild(div);
+                });
+            });
         }
 
         function updateFriendsStatusUI() {
@@ -475,9 +535,38 @@
         function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
         function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
         
-        // ฟังก์ชันควบคุม Modal เติมเหรียญ
         function openTopupModal() { document.getElementById('topupModal').classList.remove('hidden'); }
         function closeTopupModal() { document.getElementById('topupModal').classList.add('hidden'); }
+
+        // ฟังก์ชันควบคุม Popup ไลฟ์สด
+        function openLiveModal() {
+            if (!currentUserName) { alert('กรุณาเข้าสู่ระบบก่อนเปิดไลฟ์สด'); openLoginModal(); return; }
+            document.getElementById('liveModal').classList.remove('hidden');
+        }
+        function closeLiveModal() { document.getElementById('liveModal').classList.add('hidden'); }
+
+        function openWatchLiveModal() {
+            document.getElementById('watchLiveModal').classList.remove('hidden');
+            if (window.socket) {
+                window.socket.emit('get_live_channels');
+            }
+        }
+        function closeWatchLiveModal() { document.getElementById('watchLiveModal').classList.add('hidden'); }
+
+        function startBroadcasting() {
+            const channelName = document.getElementById('live-channel-name').value.trim();
+            if (!channelName) { alert('กรุณาระบุชื่อช่องหรือหัวข้อไลฟ์'); return; }
+            if (window.socket && currentUserName) {
+                window.socket.emit('start_live', { username: currentUserName, channelName: channelName });
+            }
+            alert(`เปิดห้องไลฟ์ "${channelName}" สำเร็จ!`);
+            closeLiveModal();
+        }
+
+        function watchLiveStream(username, channelName) {
+            alert(`กำลังเชื่อมต่อเข้าชมไลฟ์ของ ${username} (${channelName})`);
+            closeWatchLiveModal();
+        }
 
         async function submitTopup() {
             const baht = document.getElementById('topupBaht').value;

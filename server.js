@@ -86,7 +86,6 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/topup', async (req, res) => {
     try {
         const { name, amountBaht } = req.body;
-        // เรทตัวอย่าง: 10 บาท = 50 เหรียญ FB
         const addedCoins = (amountBaht / 10) * 50; 
 
         const user = await User.findOneAndUpdate(
@@ -200,6 +199,12 @@ app.get('/api/private-messages/:userA/:userB', async (req, res) => {
 
 // 11. ระบบ Real-time Socket.io
 const onlineUsers = new Map();
+const activeLiveStreams = new Map(); // จัดเก็บห้องไลฟ์สด active (username -> channelName)
+
+function broadcastLiveChannels() {
+    const channels = Array.from(activeLiveStreams.entries()).map(([username, channelName]) => ({ username, channelName }));
+    io.emit('live_channels_list', channels);
+}
 
 io.on('connection', (socket) => {
     console.log('มีผู้ใช้งานเชื่อมต่อ Socket:', socket.id);
@@ -232,6 +237,26 @@ io.on('connection', (socket) => {
         } catch (err) {
             console.error("Private message error:", err);
         }
+    });
+
+    // ระบบไลฟ์สด
+    socket.on('start_live', (data) => {
+        if (data.username && data.channelName) {
+            activeLiveStreams.set(data.username, data.channelName);
+            broadcastLiveChannels();
+        }
+    });
+
+    socket.on('stop_live', (username) => {
+        if (username) {
+            activeLiveStreams.delete(username);
+            broadcastLiveChannels();
+        }
+    });
+
+    socket.on('get_live_channels', () => {
+        const channels = Array.from(activeLiveStreams.entries()).map(([username, channelName]) => ({ username, channelName }));
+        socket.emit('live_channels_list', channels);
     });
 
     // ระบบ WebRTC วิดีโอคอล
@@ -267,10 +292,12 @@ io.on('connection', (socket) => {
         for (let [username, sId] of onlineUsers.entries()) {
             if (sId === socket.id) {
                 onlineUsers.delete(username);
+                activeLiveStreams.delete(username);
                 break;
             }
         }
         io.emit('online_users_list', Array.from(onlineUsers.keys()));
+        broadcastLiveChannels();
         console.log('ผู้ใช้งานตัดการเชื่อมต่อ Socket:', socket.id);
     });
 });
