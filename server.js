@@ -4,49 +4,45 @@ const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+    cors: { origin: "*" }
+});
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname)));
 
+// 1. เชื่อมต่อ MongoDB Atlas
 const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://admin:1234@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority";
 
 mongoose.connect(MONGO_URI)
     .then(() => console.log('MongoDB Connected Successfully!'))
     .catch(err => console.log('MongoDB Connection Error:', err));
 
-// User Schema
+// 2. โครงสร้างข้อมูลสมาชิก (User Schema) - เพิ่ม fbCoins สำหรับระบบเหรียญ
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     email: String,
     phone: String,
-    fbCoins: { type: Number, default: 100 },
-    bankDetails: {
-        fullName: { type: String, default: '' },
-        bankName: { type: String, default: '' },
-        accountNumber: { type: String, default: '' }
-    },
+    securityQuestion: String,
+    securityAnswer: String,
+    profileImage: { type: String, default: '' },
+    statusMessage: { type: String, default: '' },
+    fbCoins: { type: Number, default: 50 }, // แจกเหรียญทดลองใช้เริ่มต้น 50 เหรียญ
+    friends: [{ type: String }],
     following: [{ type: String }],
     followers: [{ type: String }]
 });
+
 const User = mongoose.model('User', userSchema);
 
-// Post Schema
-const postSchema = new mongoose.Schema({
-    author: { type: String, required: true },
-    content: { type: String, required: true },
-    flowersCount: { type: Number, default: 0 },
-    createdAt: { type: Date, default: Date.now }
-});
-const Post = mongoose.model('Post', postSchema);
-
-// Private Message Schema
+// Schema สำหรับแชทส่วนตัว
 const privateMessageSchema = new mongoose.Schema({
     sender: { type: String, required: true },
     receiver: { type: String, required: true },
@@ -55,13 +51,15 @@ const privateMessageSchema = new mongoose.Schema({
 });
 const PrivateMessage = mongoose.model('PrivateMessage', privateMessageSchema);
 
-// API Routes
+// 3. API สำหรับสมัครสมาชิก
 app.post('/api/register', async (req, res) => {
     try {
-        const { name, password } = req.body;
-        const existing = await User.findOne({ name });
-        if (existing) return res.json({ success: false, message: 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว' });
-        const newUser = new User({ name, password });
+        const { name, password, email, phone, securityQuestion, securityAnswer } = req.body;
+        const existingUser = await User.findOne({ name });
+        if (existingUser) {
+            return res.json({ success: false, message: 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว' });
+        }
+        const newUser = new User({ name, password, email, phone, securityQuestion, securityAnswer });
         await newUser.save();
         res.json({ success: true, message: 'ลงทะเบียนสำเร็จ' });
     } catch (err) {
@@ -69,6 +67,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
+// 4. API สำหรับเข้าสู่ระบบ
 app.post('/api/login', async (req, res) => {
     try {
         const { name, password } = req.body;
@@ -79,126 +78,132 @@ app.post('/api/login', async (req, res) => {
             res.json({ success: false, message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
         }
     } catch (err) {
-        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
+        res.json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
     }
 });
 
+// API สำหรับเติมเหรียญ FB (ฟูบะ) ผ่าน QR Code
 app.post('/api/topup', async (req, res) => {
     try {
         const { name, amountBaht } = req.body;
-        const addedCoins = (amountBaht / 10) * 50;
-        const user = await User.findOneAndUpdate({ name }, { $inc: { fbCoins: addedCoins } }, { new: true });
-        res.json({ success: true, message: `เติมเงินสำเร็จ! ได้รับ ${addedCoins} เหรียญ`, fbCoins: user.fbCoins });
-    } catch (err) {
-        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
-    }
-});
+        // เรทตัวอย่าง: 10 บาท = 50 เหรียญ FB
+        const addedCoins = (amountBaht / 10) * 50; 
 
-app.post('/api/withdraw', async (req, res) => {
-    try {
-        const { name, fullName, bankName, accountNumber, amountCoins } = req.body;
-        const user = await User.findOne({ name });
-        if (!user || user.fbCoins < amountCoins) return res.json({ success: false, message: 'เหรียญไม่พอถอน' });
-        user.fbCoins -= amountCoins;
-        user.bankDetails = { fullName, bankName, accountNumber };
-        await user.save();
-        res.json({ success: true, message: 'ถอนเงินสำเร็จ', fbCoins: user.fbCoins });
-    } catch (err) {
-        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
-    }
-});
+        const user = await User.findOneAndUpdate(
+            { name },
+            { $inc: { fbCoins: addedCoins } },
+            { new: true }
+        );
 
-app.post('/api/send-gift', async (req, res) => {
-    try {
-        const { senderName, receiverName, coinAmount } = req.body;
-        const sender = await User.findOne({ name: senderName });
-        if (!sender || sender.fbCoins < coinAmount) return res.json({ success: false, message: 'เหรียญไม่พอ' });
-        sender.fbCoins -= coinAmount;
-        await sender.save();
-        const receiver = await User.findOneAndUpdate({ name: receiverName }, { $inc: { fbCoins: coinAmount } }, { new: true });
-        res.json({ success: true, senderCoins: sender.fbCoins });
-    } catch (err) {
-        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
-    }
-});
-
-// API ติดตาม / เลิกติดตาม (Follow / Unfollow)
-app.post('/api/follow', async (req, res) => {
-    try {
-        const { userName, targetUser } = req.body;
-        if (userName === targetUser) return res.json({ success: false, message: 'ติดตามตัวเองไม่ได้' });
-
-        const user = await User.findOne({ name: userName });
-        const target = await User.findOne({ name: targetUser });
-
-        if (!user || !target) return res.json({ success: false, message: 'ไม่พบผู้ใช้' });
-
-        const isFollowing = user.following.includes(targetUser);
-        if (isFollowing) {
-            user.following.pull(targetUser);
-            target.followers.pull(userName);
+        if (user) {
+            res.json({ success: true, message: `เติมเงินสำเร็จ! ได้รับ ${addedCoins} เหรียญ FB`, fbCoins: user.fbCoins });
         } else {
-            user.following.push(targetUser);
-            target.followers.push(userName);
+            res.json({ success: false, message: 'ไม่พบชื่อผู้ใช้งานในระบบ' });
         }
-        await user.save();
-        await target.save();
-        res.json({ success: true, isFollowing: !isFollowing });
     } catch (err) {
-        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
+        res.json({ success: false, message: 'เกิดข้อผิดพลาดในการเติมเหรียญ' });
     }
 });
 
-app.post('/api/posts', async (req, res) => {
+// 5. API สำหรับกู้คืนรหัสผ่าน
+app.post('/api/forgot', async (req, res) => {
     try {
-        const { author, content } = req.body;
-        const newPost = new Post({ author, content });
-        await newPost.save();
-        res.json({ success: true, post: newPost });
+        const { name, securityAnswer } = req.body;
+        const user = await User.findOne({ name, securityAnswer });
+        if (user) {
+            res.json({ success: true, password: user.password });
+        } else {
+            res.json({ success: false, message: 'ชื่อผู้ใช้หรือคำตอบช่วยจำไม่ถูกต้อง' });
+        }
     } catch (err) {
-        res.json({ success: false, message: 'โพสต์ไม่สำเร็จ' });
+        res.json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
     }
 });
 
-app.get('/api/posts', async (req, res) => {
-    try {
-        const posts = await Post.find().sort({ createdAt: -1 });
-        res.json(posts);
-    } catch (err) { res.json([]); }
-});
-
+// 6. API ดึงจำนวนสมาชิกทั้งหมด
 app.get('/api/stats', async (req, res) => {
     try {
         const count = await User.countDocuments();
         res.json({ totalMembers: count });
-    } catch (err) { res.json({ totalMembers: 0 }); }
+    } catch (err) {
+        res.json({ totalMembers: 0 });
+    }
 });
 
+// 7. API ดึงรายชื่อสมาชิกทั้งหมด
 app.get('/api/users', async (req, res) => {
     try {
-        const users = await User.find({}, 'name fbCoins following followers');
+        const users = await User.find({}, 'name profileImage statusMessage fbCoins friends following followers');
         res.json(users);
-    } catch (err) { res.json([]); }
+    } catch (err) {
+        res.json([]);
+    }
 });
 
-app.get('/api/private-messages/:user1/:user2', async (req, res) => {
+// 8. API อัปเดตโปรไฟล์
+app.post('/api/update-profile', async (req, res) => {
     try {
-        const { user1, user2 } = req.params;
+        const { name, profileImage, statusMessage } = req.body;
+        const updatedUser = await User.findOneAndUpdate(
+            { name },
+            { profileImage, statusMessage },
+            { new: true }
+        );
+        if (updatedUser) {
+            res.json({ success: true, message: 'อัปเดตโปรไฟล์สำเร็จ', user: updatedUser });
+        } else {
+            res.json({ success: false, message: 'ไม่พบผู้ใช้งาน' });
+        }
+    } catch (err) {
+        res.json({ success: false, message: 'เกิดข้อผิดพลาดในการอัปเดต' });
+    }
+});
+
+// 9. API เพิ่มเพื่อนและติดตาม
+app.post('/api/follow', async (req, res) => {
+    try {
+        const { currentUserName, targetUserName } = req.body;
+        await User.findOneAndUpdate({ name: currentUserName }, { $addToSet: { following: targetUserName } });
+        await User.findOneAndUpdate({ name: targetUserName }, { $addToSet: { followers: currentUserName } });
+        res.json({ success: true, message: 'ติดตามสำเร็จ' });
+    } catch (err) {
+        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
+    }
+});
+
+app.post('/api/add-friend', async (req, res) => {
+    try {
+        const { currentUserName, targetUserName } = req.body;
+        await User.findOneAndUpdate({ name: currentUserName }, { $addToSet: { friends: targetUserName } });
+        await User.findOneAndUpdate({ name: targetUserName }, { $addToSet: { friends: currentUserName } });
+        res.json({ success: true, message: 'เป็นเพื่อนกันเรียบร้อย สามารถแชทได้แล้ว' });
+    } catch (err) {
+        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
+    }
+});
+
+// 10. API ดึงประวัติแชทส่วนตัว
+app.get('/api/private-messages/:userA/:userB', async (req, res) => {
+    try {
+        const { userA, userB } = req.params;
         const messages = await PrivateMessage.find({
             $or: [
-                { sender: user1, receiver: user2 },
-                { sender: user2, receiver: user1 }
+                { sender: userA, receiver: userB },
+                { sender: userB, receiver: userA }
             ]
         }).sort({ createdAt: 1 });
         res.json(messages);
-    } catch (err) { res.json([]); }
+    } catch (err) {
+        res.json([]);
+    }
 });
 
-// Socket.io & WebRTC Signaling สำหรับไลฟ์สดสตรีมมิ่ง
+// 11. ระบบ Real-time Socket.io
 const onlineUsers = new Map();
-const activeLiveStreams = new Map();
 
 io.on('connection', (socket) => {
+    console.log('มีผู้ใช้งานเชื่อมต่อ Socket:', socket.id);
+
     socket.on('user_online', (username) => {
         if (username) {
             onlineUsers.set(username, socket.id);
@@ -206,60 +211,72 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('start_live', (username) => {
-        activeLiveStreams.set(username, socket.id);
-        io.emit('live_streams_update', Array.from(activeLiveStreams.keys()));
-    });
-
-    socket.on('end_live', (username) => {
-        activeLiveStreams.delete(username);
-        io.emit('live_streams_update', Array.from(activeLiveStreams.keys()));
-    });
-
-    // WebRTC Signaling สำหรับเชื่อมต่อภาพไลฟ์สดระหว่างคนไลฟ์กับคนดู
-    socket.on('join_live_room', (data) => {
-        const broadcasterSocketId = activeLiveStreams.get(data.broadcaster);
-        if (broadcasterSocketId) {
-            io.to(broadcasterSocketId).emit('request_offer', { viewer: socket.id });
-        }
-    });
-
-    socket.on('offer', (data) => {
-        io.to(data.to).emit('offer', { offer: data.offer, from: socket.id });
-    });
-
-    socket.on('answer', (data) => {
-        io.to(data.to).emit('answer', { answer: data.answer, from: socket.id });
-    });
-
-    socket.on('ice-candidate', (data) => {
-        io.to(data.to).emit('ice-candidate', { candidate: data.candidate, from: socket.id });
+    socket.on('chat-message', (data) => {
+        io.emit('chat-message', data);
     });
 
     socket.on('send_private_message', async (data) => {
-        const newMessage = new PrivateMessage({ sender: data.sender, receiver: data.receiver, message: data.message });
-        await newMessage.save();
-        const receiverSocketId = onlineUsers.get(data.receiver);
-        if (receiverSocketId) {
-            io.to(receiverSocketId).emit('receive_private_message', newMessage);
+        try {
+            const newMessage = new PrivateMessage({
+                sender: data.sender,
+                receiver: data.receiver,
+                message: data.message
+            });
+            await newMessage.save();
+
+            const receiverSocketId = onlineUsers.get(data.receiver);
+            if (receiverSocketId) {
+                io.to(receiverSocketId).emit('receive_private_message', newMessage);
+            }
+            socket.emit('receive_private_message', newMessage);
+        } catch (err) {
+            console.error("Private message error:", err);
         }
-        socket.emit('receive_private_message', newMessage);
+    });
+
+    // ระบบ WebRTC วิดีโอคอล
+    socket.on('call_user', (data) => {
+        const targetSocketId = onlineUsers.get(data.toUser);
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('incoming_call', data);
+        }
+    });
+
+    socket.on('answer_call', (data) => {
+        const targetSocketId = onlineUsers.get(data.toUser);
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('call_answered', data);
+        }
+    });
+
+    socket.on('ice_candidate', (data) => {
+        const targetSocketId = onlineUsers.get(data.toUser);
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('ice_candidate', data);
+        }
+    });
+
+    socket.on('end_call', (data) => {
+        const targetSocketId = onlineUsers.get(data.toUser);
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('call_ended', data);
+        }
     });
 
     socket.on('disconnect', () => {
         for (let [username, sId] of onlineUsers.entries()) {
             if (sId === socket.id) {
                 onlineUsers.delete(username);
-                activeLiveStreams.delete(username);
                 break;
             }
         }
         io.emit('online_users_list', Array.from(onlineUsers.keys()));
-        io.emit('live_streams_update', Array.from(activeLiveStreams.keys()));
+        console.log('ผู้ใช้งานตัดการเชื่อมต่อ Socket:', socket.id);
     });
 });
 
 const PORT = process.env.PORT || 10000;
+
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
