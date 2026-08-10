@@ -258,6 +258,38 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 10000;
+
+
+// 12. API สำหรับรับและบันทึกโค้ดอัตโนมัติจากหน้าตั้งค่า
+const fs = require('fs');
+
+app.post('/api/inject-code', (req, res) => {
+    try {
+        const { target, code } = req.body;
+        
+        if (!code || !code.trim()) {
+            return res.json({ success: false, message: 'ไม่มีข้อมูลโค้ดที่ส่งมา' });
+        }
+
+        // กำหนดไฟล์เป้าหมายที่จะบันทึก
+        // ถ้า target เป็น 'server' จะบันทึกทับ server.js (หรือไฟล์ปัจจุบัน) ถ้าเป็น 'index' จะบันทึกไฟล์ index.html
+        let targetFilePath = target === 'server' ? __filename : path.join(__dirname, 'index.html');
+
+        // ตัวเลือก: เขียนทับ หรือ จะใช้วิธีต่อท้ายไฟล์ (Append) 
+        // ในที่นี้เลือกใช้วิธีบันทึกอัปเดต หรือเขียนต่อท้ายตามความเหมาะสมของพี่ดิมครับ
+        fs.appendFile(targetFilePath, '\n\n/* --- โค้ดที่เพิ่มผ่านระบบอัตโนมัติ --- */\n' + code, 'utf8', (err) => {
+            if (err) {
+                console.error("Inject code error:", err);
+                return res.json({ success: false, message: 'ไม่สามารถบันทึกไฟล์ได้: ' + err.message });
+            }
+            res.json({ success: true, message: 'บันทึกโค้ดลงไฟล์เรียบร้อยแล้ว' });
+        });
+
+    } catch (err) {
+        console.error("Server error:", err);
+        res.json({ success: false, message: 'เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์' });
+    }
+});
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

@@ -135,6 +135,130 @@
                 </ul>
                 <button id="logout-btn" onclick="logout()" class="hidden w-full bg-red-600 text-white py-2 rounded font-semibold text-sm hover:bg-red-700">ออกจากระบบ</button>
             </div>
+	<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการและซ่อมแซมโค้ด</title>
+    <!-- โหลด Tailwind CSS เพื่อให้หน้าตาสวยงามและจัดวางถูกต้อง -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+
+    <div class="max-w-2xl mx-auto">
+        <!-- === ส่วน UI เมนูจัดการและซ่อมแซมโค้ดในหน้าตั้งค่า === -->
+        <div id="code-injector-section" class="bg-white p-6 rounded-lg shadow-md border border-blue-200">
+            <h2 class="font-bold text-xl mb-2 text-blue-700">⚙️ ระบบเพิ่มฟังก์ชันและซ่อมแซมโค้ดอัตโนมัติ</h2>
+            <p class="text-sm text-gray-600 mb-4">เลือกไฟล์เป้าหมาย, ตรวจสอบข้อผิดพลาด, ซ่อมแซมโค้ดอัตโนมัติ และกดส่งเพื่ออัปเดตระบบ</p>
+            
+            <!-- ปุ่มสลับเลือกเป้าหมายไฟล์ -->
+            <div class="flex gap-6 mb-4 bg-gray-50 p-3 rounded border">
+                <label class="cursor-pointer font-medium text-sm flex items-center">
+                    <input type="radio" name="targetFile" value="index" checked class="mr-2"> ฝั่ง Index (Client)
+                </label>
+                <label class="cursor-pointer font-medium text-sm flex items-center">
+                    <input type="radio" name="targetFile" value="server" class="mr-2"> ฝั่ง Server (server.js)
+                </label>
+            </div>
+
+            <!-- กล่องแสดงข้อผิดพลาดแบบซ่อนอัตโนมัติ -->
+            <div id="error-box" class="hidden bg-red-100 text-red-700 p-3 rounded mb-3 text-xs border border-red-300">
+                <strong>จุดที่ผิดพลาด:</strong> <span id="error-message"></span>
+            </div>
+
+            <!-- ช่องใส่โค้ด -->
+            <textarea id="custom-code-input" rows="8" placeholder="// วางโค้ดที่ต้องการตรวจสอบหรือซ่อมแซมที่นี่..." class="border p-3 w-full text-sm font-mono rounded mb-4 bg-gray-900 text-green-400 outline-none"></textarea>
+
+            <!-- กลุ่มปุ่มควบคุมการทำงาน -->
+            <div class="flex gap-2 flex-wrap">
+                <button onclick="checkCodeSyntax()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded text-sm font-medium transition">🔍 เช็คโค้ด</button>
+                <button onclick="autoFixCode()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium transition">🛠️ ซ่อมโค้ดอัตโนมัติ</button>
+                <button onclick="submitNewCode()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition">🚀 ยืนยันและส่งโค้ด</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SOCKET_SERVER_URL = 'https://chatpidim.onrender.com';
+
+        function checkCodeSyntax() {
+            const code = document.getElementById('custom-code-input').value;
+            const errorBox = document.getElementById('error-box');
+            const errorMessage = document.getElementById('error-message');
+
+            if (!code.trim()) {
+                alert('กรุณากรอกโค้ดก่อนตรวจสอบครับ');
+                return;
+            }
+
+            try {
+                new Function(code);
+                errorBox.classList.add('hidden');
+                alert('✅ โค้ดถูกต้องสมบูรณ์! ไม่พบปัญหา Syntax Error เบื้องต้น');
+            } catch (e) {
+                errorBox.classList.remove('hidden');
+                errorMessage.innerText = e.message;
+                alert('❌ พบข้อผิดพลาดในโค้ด (ดูรายละเอียดที่กล่องแดงด้านบน)');
+            }
+        }
+
+        function autoFixCode() {
+            let code = document.getElementById('custom-code-input').value;
+            const errorBox = document.getElementById('error-box');
+            
+            if (!code.trim()) {
+                alert('กรุณาใส่โค้ดที่ต้องการซ่อมแซมก่อนครับ');
+                return;
+            }
+
+            let openBraces = (code.match(/{/g) || []).length;
+            let closeBraces = (code.match(/}/g) || []).length;
+            
+            if (openBraces > closeBraces) {
+                code += "\n" + "}".repeat(openBraces - closeBraces);
+                document.getElementById('custom-code-input').value = code;
+                errorBox.classList.add('hidden');
+                alert('🛠️ ซ่อมแซมเรียบร้อย: เติมวงเล็บปีกกาที่ขาดให้โดยอัตโนมัติแล้วครับ!');
+            } else {
+                alert('💡 ไม่พบวงเล็บปีกกาที่เปิดค้างไว้ โค้ดอยู่ในจุดที่สมบูรณ์ดีแล้วครับ');
+            }
+        }
+
+        function submitNewCode() {
+            const target = document.querySelector('input[name="targetFile"]:checked').value;
+            const code = document.getElementById('custom-code-input').value;
+
+            if (!code.trim()) {
+                alert('กรุณาใส่โค้ดก่อนกดส่งครับ');
+                return;
+            }
+
+            if (!confirm(`ยืนยันการส่งโค้ดไปยังฝั่ง ${target.toUpperCase()} ใช่หรือไม่?`)) return;
+
+            fetch(`${SOCKET_SERVER_URL}/api/inject-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target, code })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert('🎉 สำเร็จ! ระบบเพิ่มและจัดเรียงโค้ดลงไฟล์เรียบร้อยแล้ว');
+                    document.getElementById('custom-code-input').value = '';
+                    document.getElementById('error-box').classList.add('hidden');
+                } else {
+                    alert('❌ เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: ' + data.message);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ ไม่สามารถเชื่อมต่อกับ Server ได้');
+            });
+        }
+    </script>
+</body>
+</html>
         </section>
 
     </main>
