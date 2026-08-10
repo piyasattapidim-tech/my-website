@@ -24,7 +24,7 @@ mongoose.connect(MONGO_URI)
     .then(() => console.log('MongoDB Connected Successfully!'))
     .catch(err => console.log('MongoDB Connection Error:', err));
 
-// 2. โครงสร้างข้อมูลสมาชิก (User Schema)
+// 2. โครงสร้างข้อมูลสมาชิก (User Schema) - เพิ่ม fbCoins สำหรับระบบเหรียญ
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
     password: { type: String, required: true },
@@ -34,6 +34,7 @@ const userSchema = new mongoose.Schema({
     securityAnswer: String,
     profileImage: { type: String, default: '' },
     statusMessage: { type: String, default: '' },
+    fbCoins: { type: Number, default: 50 }, // แจกเหรียญทดลองใช้เริ่มต้น 50 เหรียญ
     friends: [{ type: String }],
     following: [{ type: String }],
     followers: [{ type: String }]
@@ -81,6 +82,29 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// API สำหรับเติมเหรียญ FB (ฟูบะ) ผ่าน QR Code
+app.post('/api/topup', async (req, res) => {
+    try {
+        const { name, amountBaht } = req.body;
+        // เรทตัวอย่าง: 10 บาท = 50 เหรียญ FB
+        const addedCoins = (amountBaht / 10) * 50; 
+
+        const user = await User.findOneAndUpdate(
+            { name },
+            { $inc: { fbCoins: addedCoins } },
+            { new: true }
+        );
+
+        if (user) {
+            res.json({ success: true, message: `เติมเงินสำเร็จ! ได้รับ ${addedCoins} เหรียญ FB`, fbCoins: user.fbCoins });
+        } else {
+            res.json({ success: false, message: 'ไม่พบชื่อผู้ใช้งานในระบบ' });
+        }
+    } catch (err) {
+        res.json({ success: false, message: 'เกิดข้อผิดพลาดในการเติมเหรียญ' });
+    }
+});
+
 // 5. API สำหรับกู้คืนรหัสผ่าน
 app.post('/api/forgot', async (req, res) => {
     try {
@@ -109,7 +133,7 @@ app.get('/api/stats', async (req, res) => {
 // 7. API ดึงรายชื่อสมาชิกทั้งหมด
 app.get('/api/users', async (req, res) => {
     try {
-        const users = await User.find({}, 'name profileImage statusMessage friends following followers');
+        const users = await User.find({}, 'name profileImage statusMessage fbCoins friends following followers');
         res.json(users);
     } catch (err) {
         res.json([]);
