@@ -3,470 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ยินดีต้อนรับแชทพี่ดิม ChatPidim</title>
+    <title>ChatPidim - แชทพี่ดิม</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans pb-20">
+<body class="bg-slate-50 text-slate-800 pb-24">
 
-    <header class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
-        <h1 class="text-xl font-bold">ยินดีต้อนรับแชทพี่ดิม ChatPidim</h1>
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
+        <h1 class="text-lg md:text-xl font-bold tracking-wide flex items-center gap-2">
+            <span>💬</span> ChatPidim
+        </h1>
         <div class="flex items-center space-x-3">
-            <!-- ส่วนแสดงกระเป๋าเหรียญ FB -->
-            <div id="wallet-badge" class="hidden bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow">
+            <!-- กระเป๋าเหรียญ FB -->
+            <div id="wallet-badge" class="hidden bg-amber-400 text-amber-950 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
                 <span>💰 <span id="header-user-coins">0</span> เหรียญ</span>
-                <button onclick="openTopupModal()" class="bg-white text-amber-600 px-2 py-0.5 rounded-full text-[10px] hover:bg-amber-100 ml-1">➕ เติม</button>
+                <button onclick="openTopupModal()" class="bg-white text-amber-700 px-2 py-0.5 rounded-full text-[10px] hover:bg-amber-50 transition font-bold">➕ เติม</button>
             </div>
             <div id="auth-buttons" class="space-x-2">
-                <button onclick="openLoginModal()" class="bg-transparent border border-white text-white px-3 py-1 rounded font-semibold text-sm hover:bg-blue-700">เข้าสู่ระบบ</button>
-                <button onclick="openRegisterModal()" class="bg-white text-blue-600 px-3 py-1 rounded font-semibold text-sm hover:bg-gray-100">ลงทะเบียน</button>
+                <button onclick="openLoginModal()" class="bg-white/10 border border-white/30 text-white px-3 py-1.5 rounded-lg font-medium text-xs hover:bg-white/20 transition">เข้าสู่ระบบ</button>
+                <button onclick="openRegisterModal()" class="bg-white text-blue-600 px-3 py-1.5 rounded-lg font-semibold text-xs hover:bg-slate-100 transition shadow-sm">ลงทะเบียน</button>
             </div>
         </div>
     </header>
 
-    <main class="w-full p-4 space-y-4">
+    <main class="w-full max-w-4xl mx-auto p-4 space-y-4">
 
-        <!-- 1. หน้าหลัก -->
+        <!-- 1. หน้าหลัก (Home) -->
         <section id="mode-home" class="app-mode space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="space-y-3 md:col-span-1">
-                    <div class="bg-white p-3 rounded-lg shadow text-xs">
-                        <h2 class="font-bold text-gray-800 mb-2 border-b pb-1">📊 สถิติระบบ</h2>
-                        <div class="space-y-1.5">
-                            <div class="flex justify-between items-center text-gray-600">
+                <!-- สถิติ & เครื่องเล่นเสียง -->
+                <div class="space-y-4 md:col-span-1">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                        <h2 class="font-bold text-slate-800 text-sm border-b pb-2 flex items-center gap-2"><span>📊</span> สถิติระบบ</h2>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between items-center text-slate-600">
                                 <span>👥 ผู้ชมปัจจุบัน:</span>
                                 <span id="stat-current-viewers" class="font-bold text-blue-600 text-sm">1</span>
                             </div>
-                            <div class="flex justify-between items-center text-gray-600">
+                            <div class="flex justify-between items-center text-slate-600">
                                 <span>👤 สมาชิกทั้งหมด:</span>
-                                <span id="stat-total-members" class="font-bold text-green-600 text-sm">0</span>
-                            </div>
-                            <div class="flex justify-between items-center text-gray-600">
-                                <span>📈 ยอดเข้าชมสะสม:</span>
-                                <span id="stat-total-views" class="font-bold text-purple-600 text-sm">1</span>
+                                <span id="stat-total-members" class="font-bold text-emerald-600 text-sm">0</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-white p-3 rounded-lg shadow text-xs space-y-2">
-                        <div class="flex justify-between items-center border-b pb-1">
-                            <span id="player-mode-title" class="font-semibold text-gray-700">📻 วิทยุออนไลน์</span>
-                            <button onclick="toggleAudioMode()" class="bg-blue-500 text-white px-2 py-0.5 rounded text-[10px] hover:bg-blue-600">🔄 สลับโหมด</button>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                        <div class="flex justify-between items-center border-b pb-2">
+                            <span id="player-mode-title" class="font-bold text-slate-800 text-xs flex items-center gap-1.5"><span>📻</span> วิทยุออนไลน์</span>
+                            <button onclick="toggleAudioMode()" class="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-[10px] hover:bg-slate-200 transition font-medium">🔄 สลับโหมด</button>
                         </div>
                         <div id="radio-container">
-                            <audio controls class="w-full h-8 mt-1">
+                            <audio controls class="w-full h-9 mt-1">
                                 <source src="https://stream.zeno.fm/f3wvbbqmdv8uv" type="audio/mpeg">
                             </audio>
                         </div>
                         <div id="mp3-container" class="hidden space-y-2">
-                            <input type="text" id="search-song" oninput="filterSongs()" placeholder="🔍 ค้นหาเพลง..." class="w-full border p-1 rounded text-xs">
-                            <input type="text" id="upload-song-title" placeholder="ชื่อเพลง" class="w-full border p-1 rounded text-[10px]">
-                            <input type="file" id="upload-song-file" accept="audio/*,video/mp4" class="w-full text-[10px]">
-                            <button onclick="uploadSong()" class="w-full bg-green-500 text-white py-1 rounded text-[10px]">📤 อัปโหลด</button>
-                            <div id="song-list" class="max-h-32 overflow-y-auto space-y-1 border-t pt-1"></div>
-                            <audio id="mp3-player" controls class="w-full h-8 mt-1 hidden"></audio>
-                            <video id="mp4-player" controls class="w-full max-h-48 mt-1 hidden rounded"></video>
+                            <audio id="mp3-player" controls class="w-full h-9 mt-1 hidden"></audio>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white p-4 rounded-lg shadow md:col-span-2 flex flex-col justify-center items-center text-center border-2 border-dashed border-gray-200 min-h-[220px]">
-                    <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1.5px dashed #cbd5e1; width: 100%;">
-                        <h3 style="margin-top: 0; font-size: 16px; color: #1e293b;">📌 ฟีดสถานะและมีเดียล่าสุดจากเพื่อนๆ</h3>
-                        <div id="feed-items-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto;">
-                            <p style="color: #94a3b8; font-size: 14px; text-align: center;">ยังไม่มีการอัปเดตสถานะในขณะนี้</p>
+                <!-- ฟีดสถานะ -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 md:col-span-2 flex flex-col justify-center items-center text-center">
+                    <div class="w-full bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200">
+                        <h3 class="font-bold text-slate-700 text-sm mb-3 flex items-center justify-center gap-1.5"><span>📌</span> ฟีดสถานะและอัปเดตล่าสุด</h3>
+                        <div id="feed-items-list" class="space-y-2 max-h-[300px] overflow-y-auto">
+                            <p class="text-slate-400 text-xs py-4">ยังไม่มีการอัปเดตสถานะในขณะนี้</p>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 2. หน้าแชท -->
+        <!-- 2. หน้าแชทสาธารณะ (Chat) -->
         <section id="mode-chat" class="app-mode hidden space-y-4">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h2 class="text-lg font-bold text-gray-800">💬 แชทสาธารณะ & บอร์ดระบายความรู้สึก</h2>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2"><span>💬</span> แชทสาธารณะ & บอร์ดพูดคุย</h2>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow h-64 flex flex-col justify-between">
-                <div id="public-chat-box" class="overflow-y-auto space-y-2 text-sm flex-1 pr-2">
-                    <div class="bg-gray-100 p-2 rounded w-max">ยินดีต้อนรับสู่แชทสาธารณะ ทักทายกันได้เลยครับ</div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 h-[400px] flex flex-col justify-between">
+                <div id="public-chat-box" class="overflow-y-auto space-y-3 text-xs md:text-sm flex-1 pr-2">
+                    <div class="bg-blue-50 text-blue-900 p-3 rounded-xl w-max max-w-[80%] shadow-sm">ยินดีต้อนรับสู่แชทสาธารณะ ทักทายกันได้เลยครับ 👋</div>
                 </div>
-                <div class="flex mt-2 pt-2 border-t">
-                    <input type="text" id="public-chat-input" placeholder="พิมพ์ข้อความ..." class="border flex-1 p-2 rounded-l text-sm">
-                    <button onclick="sendPublicMessage()" class="bg-blue-600 text-white px-4 rounded-r text-sm">ส่ง</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. หน้าเพื่อน -->
-        <section id="mode-friends" class="app-mode hidden space-y-4 max-w-md mx-auto">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h2 class="text-lg font-bold text-gray-800 mb-2">👥 เพื่อนและการติดตาม</h2>
-                <p class="text-gray-500 text-sm mb-4" id="friend-status-text">กรุณาเข้าสู่ระบบเพื่อดูรายชื่อเพื่อน</p>
-                <div id="friend-content" class="hidden space-y-3">
-                    <div id="friend-list" class="space-y-3"></div>
+                <div class="flex gap-2 mt-3 pt-3 border-t border-slate-100">
+                    <input type="text" id="public-chat-input" placeholder="พิมพ์ข้อความ..." class="border border-slate-200 flex-1 px-3 py-2 rounded-xl text-xs md:text-sm focus:outline-none focus:border-blue-500">
+                    <button onclick="sendPublicMessage()" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-blue-700 transition shadow-sm">ส่ง</button>
                 </div>
             </div>
         </section>
 
-        <!-- 4. หน้าโปรไฟล์ -->
+        <!-- 3. หน้าเพื่อน (Friends & Follow) -->
+        <section id="mode-friends" class="app-mode hidden space-y-4 max-w-lg mx-auto">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                <div class="border-b pb-3">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2"><span>👥</span> เพื่อนและการติดตาม</h2>
+                    <p class="text-slate-400 text-xs mt-1" id="friend-status-text">กรุณาเข้าสู่ระบบเพื่อดูรายชื่อเพื่อน</p>
+                </div>
+                <div id="friend-content" class="hidden space-y-4">
+                    <div id="friend-list" class="space-y-2.5"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. หน้าโปรไฟล์ (Profile) -->
         <section id="mode-profile" class="app-mode hidden space-y-4 max-w-md mx-auto">
-            <div class="bg-white p-4 rounded-lg shadow text-center py-6 space-y-3">
-                <div class="w-20 h-20 bg-blue-500 text-white rounded-full mx-auto flex items-center justify-center text-2xl font-bold shadow">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 text-center space-y-4">
+                <div class="w-20 h-20 bg-gradient-to-tr from-blue-500 to-indigo-600 text-white rounded-full mx-auto flex items-center justify-center text-2xl font-bold shadow-md">
                     <span id="profile-initial">U</span>
                 </div>
-                <h2 class="text-xl font-bold text-gray-800" id="profile-name">ผู้เยี่ยมชมทั่วไป</h2>
-                <p class="text-gray-500 text-sm" id="profile-email">ยังไม่ได้เข้าสู่ระบบ</p>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800" id="profile-name">ผู้เยี่ยมชมทั่วไป</h2>
+                    <p class="text-slate-400 text-xs mt-0.5" id="profile-email">ยังไม่ได้เข้าสู่ระบบ</p>
+                </div>
                 <div class="pt-2">
-                    <button onclick="openTopupModal()" class="bg-amber-500 text-white px-4 py-2 rounded font-semibold text-sm hover:bg-amber-600 shadow">💰 เติมเหรียญ FB (ฟูบะ)</button>
+                    <button onclick="openTopupModal()" class="w-full bg-amber-500 text-white py-2.5 rounded-xl font-semibold text-xs hover:bg-amber-600 transition shadow-sm flex items-center justify-center gap-1.5">
+                        <span>💰</span> เติมเหรียญ FB (ฟูบะ)
+                    </button>
                 </div>
             </div>
         </section>
 
-        <!-- 5. หน้าตั้งค่า -->
+        <!-- 5. หน้าตั้งค่า (Settings) -->
         <section id="mode-settings" class="app-mode hidden space-y-4 max-w-md mx-auto">
-            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #e2e8f0;">
-                <h3 style="margin-top: 0; font-size: 16px; color: #1e293b;">⚙️ ตั้งค่าโปรไฟล์และสถานะ</h3>
-                <div style="margin-bottom: 10px;">
-                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px;">พิมพ์สถานะของคุณตอนนี้:</label>
-                    <input type="text" id="profile-status-input" placeholder="เช่น กำลังไปเที่ยว, กินข้าวอยู่..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;" />
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                <h3 class="font-bold text-slate-800 text-sm border-b pb-2 flex items-center gap-1.5"><span>⚙️</span> ตั้งค่าโปรไฟล์และสถานะ</h3>
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-semibold text-slate-600">พิมพ์สถานะของคุณตอนนี้:</label>
+                    <input type="text" id="profile-status-input" placeholder="เช่น กำลังไปเที่ยว, กินข้าวอยู่..." class="w-full border border-slate-200 p-2.5 rounded-xl text-xs focus:outline-none focus:border-blue-500" />
                 </div>
-                <div style="margin-bottom: 10px;">
-                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px;">เลือกรูปโปรไฟล์:</label>
-                    <input type="file" id="profile-image-file" accept="image/*" style="font-size: 13px;" />
-                </div>
-                <button onclick="uploadProfileData()" style="background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;">บันทึกโปรไฟล์</button>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow space-y-4">
-                <h2 class="text-lg font-bold text-gray-800 mb-2">⚙️ ตั้งค่า</h2>
-                <button id="logout-btn" onclick="logout()" class="hidden w-full bg-red-600 text-white py-2 rounded font-semibold text-sm hover:bg-red-700">ออกจากระบบ</button>
+                <button onclick="uploadProfileData()" class="w-full bg-blue-600 text-white py-2.5 rounded-xl text-xs font-semibold hover:bg-blue-700 transition shadow-sm">บันทึกโปรไฟล์</button>
+                <button id="logout-btn" onclick="logout()" class="hidden w-full bg-rose-50 text-rose-600 border border-rose-200 py-2.5 rounded-xl text-xs font-semibold hover:bg-rose-100 transition">ออกจากระบบ</button>
             </div>
         </section>
 
     </main>
 
-    <!-- เมนูด้านล่าง -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 shadow-lg z-45">
-        <button onclick="switchMode('home')" id="btn-home" class="text-blue-600 font-medium text-xs flex flex-col items-center">🏠 หน้าหลัก</button>
-        <button onclick="switchMode('chat')" id="btn-chat" class="text-gray-500 font-medium text-xs flex flex-col items-center">💬 แชท</button>
-        <button onclick="switchMode('friends')" id="btn-friends" class="text-gray-500 font-medium text-xs flex flex-col items-center">👥 เพื่อน</button>
-        <button onclick="switchMode('profile')" id="btn-profile" class="text-gray-500 font-medium text-xs flex flex-col items-center">👤 โปรไฟล์</button>
-        <button onclick="switchMode('settings')" id="btn-settings" class="text-gray-500 font-medium text-xs flex flex-col items-center">⚙️ ตั้งค่า</button>
+    <!-- เมนูด้านล่าง (Bottom Nav) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-100 flex justify-around p-2.5 shadow-lg z-40 max-w-xl mx-auto rounded-t-2xl">
+        <button onclick="switchMode('home')" id="btn-home" class="text-blue-600 font-semibold text-[11px] flex flex-col items-center gap-1 transition"><span>🏠</span> หน้าหลัก</button>
+        <button onclick="switchMode('chat')" id="btn-chat" class="text-slate-400 font-medium text-[11px] flex flex-col items-center gap-1 transition"><span>💬</span> แชท</button>
+        <button onclick="switchMode('friends')" id="btn-friends" class="text-slate-400 font-medium text-[11px] flex flex-col items-center gap-1 transition"><span>👥</span> เพื่อน</button>
+        <button onclick="switchMode('profile')" id="btn-profile" class="text-slate-400 font-medium text-[11px] flex flex-col items-center gap-1 transition"><span>👤</span> โปรไฟล์</button>
+        <button onclick="switchMode('settings')" id="btn-settings" class="text-slate-400 font-medium text-[11px] flex flex-col items-center gap-1 transition"><span>⚙️</span> ตั้งค่า</button>
     </nav>
 
-    <!-- Modal เติมเหรียญ FB พร้อมสแกน QR Code -->
-    <div id="topupModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3 text-center">
-            <h2 class="text-xl font-bold text-gray-800">เติมเหรียญ FB (ฟูบะ)</h2>
-            <p class="text-xs text-gray-500">สแกน QR Code ผ่านแอปธนาคารเพื่อโอนเงินซื้อเหรียญ</p>
-            
-            <!-- รูป QR Code ที่พี่ดิมส่งมา (ตั้งชื่อไฟล์ว่า qrcode.jpg ไว้ในโฟลเดอร์เดียวกัน) -->
-            <div class="flex justify-center my-2">
-                <img src="qrcode.jpg" alt="QR Code พี่ดิมตำยำแซ่บ" class="w-48 h-48 object-contain border rounded-lg shadow-sm">
+    <!-- Modal เติมเหรียญ -->
+    <div id="topupModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-xs p-6 rounded-2xl shadow-xl space-y-4 text-center">
+            <h2 class="text-base font-bold text-slate-800">เติมเหรียญ FB (ฟูบะ)</h2>
+            <div class="flex justify-center my-1">
+                <img src="qrcode.jpg" alt="QR Code" class="w-40 h-40 object-contain border rounded-xl shadow-xs">
             </div>
-
-            <div class="bg-gray-50 p-2 rounded text-xs text-gray-700 border">
-                <strong>พี่ดิมตำยำแซ่บ</strong><br>
-                บัญชี: นาย บัณฑิตธรรม ปิยสัตตา
+            <div class="bg-slate-50 p-2.5 rounded-xl text-xs text-slate-600 border border-slate-100">
+                <strong>พี่ดิมตำยำแซ่บ</strong><br>บัญชี: นาย บัณฑิตธรรม ปิยสัตตา
             </div>
-
-            <div class="text-left space-y-1 pt-1">
-                <label class="block text-xs font-semibold text-gray-600">ระบุยอดเงินที่โอน (บาท):</label>
-                <input type="number" id="topupBaht" value="10" class="w-full border p-2 rounded text-sm text-center font-bold">
-                <p class="text-[10px] text-gray-400 text-center">เรท: 10 บาท = 50 เหรียญ FB</p>
+            <div class="text-left space-y-1">
+                <label class="block text-xs font-semibold text-slate-600">ระบุยอดเงินที่โอน (บาท):</label>
+                <input type="number" id="topupBaht" value="10" class="w-full border border-slate-200 p-2.5 rounded-xl text-xs text-center font-bold">
+                <p class="text-[10px] text-slate-400 text-center">เรท: 10 บาท = 50 เหรียญ FB</p>
             </div>
-
-            <div class="flex justify-end space-x-2 pt-2">
-                <button type="button" onclick="closeTopupModal()" class="bg-gray-300 px-4 py-2 rounded text-sm">ปิด</button>
-                <button type="button" onclick="submitTopup()" class="bg-amber-500 text-white px-4 py-2 rounded text-sm font-bold hover:bg-amber-600">ยืนยันการโอน / รับเหรียญ</button>
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="closeTopupModal()" class="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl text-xs font-semibold">ปิด</button>
+                <button type="button" onclick="submitTopup()" class="flex-1 bg-amber-500 text-white py-2 rounded-xl text-xs font-bold hover:bg-amber-600 shadow-sm">ยืนยันการโอน</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal ลงทะเบียน / เข้าสู่ระบบ -->
-    <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3">
-            <h2 class="text-xl font-bold text-gray-800">ลงทะเบียนสมาชิก</h2>
-            <input type="text" id="reg-name" required class="w-full border p-2 rounded text-sm" placeholder="ชื่อผู้ใช้">
-            <input type="password" id="reg-pass" required class="w-full border p-2 rounded text-sm" placeholder="รหัสผ่าน">
-            <input type="email" id="reg-email" class="w-full border p-2 rounded text-sm" placeholder="อีเมล">
-            <input type="tel" id="reg-phone" class="w-full border p-2 rounded text-sm" placeholder="เบอร์โทรศัพท์">
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">คำถามช่วยจำ</label>
-                <select id="reg-question" class="w-full border p-2 rounded text-sm mb-2">
-                    <option>ชื่อสัตว์เลี้ยงตัวแรกของคุณ?</option>
-                    <option>อาหารโปรดของคุณคืออะไร?</option>
-                </select>
-                <input type="text" id="reg-answer" class="w-full border p-2 rounded text-sm" placeholder="คำตอบของคุณ">
-            </div>
-            <div class="flex justify-end space-x-2 pt-2">
-                <button type="button" onclick="closeRegisterModal()" class="bg-gray-300 px-4 py-2 rounded text-sm">ยกเลิก</button>
-                <button type="button" onclick="handleRegister()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm">ยืนยัน</button>
+    <!-- Modal ลงทะเบียน -->
+    <div id="registerModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-xs p-6 rounded-2xl shadow-xl space-y-3">
+            <h2 class="text-base font-bold text-slate-800">ลงทะเบียนสมาชิก</h2>
+            <input type="text" id="reg-name" placeholder="ชื่อผู้ใช้" class="w-full border border-slate-200 p-2.5 rounded-xl text-xs">
+            <input type="password" id="reg-pass" placeholder="รหัสผ่าน" class="w-full border border-slate-200 p-2.5 rounded-xl text-xs">
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="closeRegisterModal()" class="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl text-xs font-semibold">ยกเลิก</button>
+                <button type="button" onclick="handleRegister()" class="flex-1 bg-blue-600 text-white py-2 rounded-xl text-xs font-semibold shadow-sm">ยืนยัน</button>
             </div>
         </div>
     </div>
 
-    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-sm p-6 rounded-lg shadow-lg relative space-y-3">
-            <h2 class="text-xl font-bold text-gray-800">เข้าสู่ระบบ</h2>
-            <input type="text" id="login-name" required class="w-full border p-2 rounded text-sm" placeholder="ชื่อผู้ใช้">
-            <input type="password" id="login-pass" required class="w-full border p-2 rounded text-sm" placeholder="รหัสผ่าน">
-            <div class="flex justify-end space-x-2 pt-2">
-                <button type="button" onclick="closeLoginModal()" class="bg-gray-300 px-4 py-2 rounded text-sm">ยกเลิก</button>
-                <button type="button" onclick="handleLogin()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm">เข้าสู่ระบบ</button>
+    <!-- Modal เข้าสู่ระบบ -->
+    <div id="loginModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-xs p-6 rounded-2xl shadow-xl space-y-3">
+            <h2 class="text-base font-bold text-slate-800">เข้าสู่ระบบ</h2>
+            <input type="text" id="login-name" placeholder="ชื่อผู้ใช้" class="w-full border border-slate-200 p-2.5 rounded-xl text-xs">
+            <input type="password" id="login-pass" placeholder="รหัสผ่าน" class="w-full border border-slate-200 p-2.5 rounded-xl text-xs">
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="closeLoginModal()" class="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl text-xs font-semibold">ยกเลิก</button>
+                <button type="button" onclick="handleLogin()" class="flex-1 bg-blue-600 text-white py-2 rounded-xl text-xs font-semibold shadow-sm">เข้าสู่ระบบ</button>
             </div>
         </div>
     </div>
 
-    <!-- UI แชทส่วนตัวแบบลอย -->
-    <div id="floating-chat-window" style="display: none; position: fixed; bottom: 20px; right: 20px; width: 320px; background: white; border: 1px solid #ccc; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden;">
-        <div id="chat-header-bar" style="background: #2563eb; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
-            <span id="chat-title-name" style="font-weight: bold; font-size: 14px;">💬 แชทส่วนตัว</span>
-            <div>
-                <button onclick="startVideoCall(true)" title="วิดีโอคอล" style="background:none; border:none; color:white; cursor:pointer; font-size:16px; margin-right:5px;">📹</button>
-                <button onclick="startVideoCall(false)" title="โทรเสียง" style="background:none; border:none; color:white; cursor:pointer; font-size:16px; margin-right:5px;">📞</button>
-                <button onclick="closeFloatingChat()" style="background:none; border:none; color:white; cursor:pointer; font-weight:bold;">✕</button>
-            </div>
+    <!-- แชทส่วนตัวลอย (Floating Chat) -->
+    <div id="floating-chat-window" class="hidden fixed bottom-16 right-4 w-80 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 overflow-hidden">
+        <div class="bg-blue-600 text-white px-4 py-3 flex justify-between items-center">
+            <span id="chat-title-name" class="font-bold text-xs">💬 แชทส่วนตัว</span>
+            <button onclick="closeFloatingChat()" class="text-white/80 hover:text-white font-bold text-sm">✕</button>
         </div>
-        <div id="floating-chat-messages" style="height: 220px; overflow-y: auto; padding: 10px; background: #f9fafb; font-size: 13px;"></div>
-        <div style="display: flex; padding: 8px; border-top: 1px solid #eee; background: white;">
-            <input type="text" id="floating-chat-input" placeholder="พิมพ์ข้อความ..." style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;" />
-            <button onclick="sendFloatingMessage()" style="background: #2563eb; color: white; border: none; padding: 6px 12px; margin-left: 5px; border-radius: 4px; cursor: pointer;">ส่ง</button>
+        <div id="floating-chat-messages" class="h-52 overflow-y-auto p-3 bg-slate-50 text-xs space-y-2"></div>
+        <div class="flex p-2 border-t border-slate-100 bg-white">
+            <input type="text" id="floating-chat-input" placeholder="พิมพ์ข้อความ..." class="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500" />
+            <button onclick="sendFloatingMessage()" class="bg-blue-600 text-white px-3.5 py-1.5 ml-1.5 rounded-xl text-xs font-semibold shadow-xs">ส่ง</button>
         </div>
     </div>
 
-    <!-- UI วิดีโอคอล -->
-    <div id="video-call-modal" style="display: none; position: fixed; top: 15%; left: 20%; width: 60%; background: #111; color: white; padding: 20px; border-radius: 12px; z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.5);">
-        <h3 id="call-status-title" style="margin-bottom: 15px; text-align: center;">กำลังเชื่อมต่อการโทร...</h3>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
-            <video id="local-video" autoplay playsinline muted style="width: 48%; background: black; border-radius: 8px; height: 200px; object-fit: cover;"></video>
-            <video id="remote-video" autoplay playsinline style="width: 48%; background: black; border-radius: 8px; height: 200px; object-fit: cover;"></video>
-        </div>
-        <div style="text-align: center; display: flex; justify-content: center; gap: 10px;">
-            <button onclick="toggleCamera()" id="toggle-cam-btn" style="background: #d97706; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">ปิดกล้อง</button>
-            <button onclick="hangUpCall()" style="background: #dc2626; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">วางสาย</button>
-        </div>
-    </div>
-
-    <!-- ==================== ระบบ Socket.io และ WebRTC ==================== -->
+    <!-- Socket.io & App Logic -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        window.socket = socket;
-
-        function playNotificationSound() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime); 
-                oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1); 
-                
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.3);
-            } catch (e) {
-                console.log("Audio error");
-            }
-        }
-
-        function showNewMessagePopup(title, message) {
-            let popup = document.createElement('div');
-            popup.className = "fixed top-5 right-5 bg-blue-600 text-white p-4 rounded-lg shadow-xl z-50 transition-all duration-300";
-            popup.innerHTML = `<div class="font-bold text-base mb-1">${title}</div><div class="text-sm">${message}</div>`;
-            document.body.appendChild(popup);
-            setTimeout(() => { popup.remove(); }, 3000);
-        }
-
-        socket.on('chat-message', function(data) {
-            playNotificationSound();
-            showNewMessagePopup("ข้อความใหม่จาก " + (data.sender || "เพื่อน"), data.message);
-
-            const chatBox = document.getElementById('public-chat-box');
-            if (chatBox) {
-                const msg = document.createElement('div');
-                msg.className = "bg-blue-50 border p-2 rounded text-sm break-words";
-                msg.innerHTML = `<span class="font-bold text-blue-600">${data.sender}:</span> ${data.message}`;
-                chatBox.appendChild(msg);
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }
-        });
-
-        // WebRTC Video Call
-        let localStream = null;
-        let peerConnection = null;
-        let isCameraOn = true;
-
-        const rtcConfig = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
-
-        function createPeerConnection(targetUser) {
-            peerConnection = new RTCPeerConnection(rtcConfig);
-
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate && window.socket) {
-                    window.socket.emit('ice_candidate', { toUser: targetUser, candidate: event.candidate });
-                }
-            };
-
-            peerConnection.ontrack = (event) => {
-                const remoteVideo = document.getElementById('remote-video');
-                if (remoteVideo.srcObject !== event.streams[0]) {
-                    remoteVideo.srcObject = event.streams[0];
-                }
-            };
-
-            if (localStream) {
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-            }
-        }
-
-        async function startVideoCall(videoEnabled) {
-            isCameraOn = videoEnabled;
-            document.getElementById('video-call-modal').style.display = 'block';
-            document.getElementById('call-status-title').innerText = `กำลังเชื่อมต่อกับ ${activeChatUser}...`;
-
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: isCameraOn, audio: true });
-                document.getElementById('local-video').srcObject = localStream;
-
-                createPeerConnection(activeChatUser);
-
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-
-                if (window.socket && activeChatUser && currentUserName) {
-                    window.socket.emit('call_user', {
-                        toUser: activeChatUser,
-                        fromUser: currentUserName,
-                        offer: offer,
-                        videoEnabled: isCameraOn
-                    });
-                }
-            } catch (err) {
-                alert('ไม่สามารถเปิดใช้งานกล้องหรือไมโครโฟนได้');
-            }
-        }
-
-        socket.on('incoming_call', async (data) => {
-            if (confirm(`มีสายเรียกเข้าจาก ${data.fromUser} ต้องการรับสายหรือไม่?`)) {
-                activeChatUser = data.fromUser;
-                document.getElementById('video-call-modal').style.display = 'block';
-                document.getElementById('call-status-title').innerText = `กำลังเชื่อมต่อสาย...`;
-
-                try {
-                    localStream = await navigator.mediaDevices.getUserMedia({ video: data.videoEnabled, audio: true });
-                    document.getElementById('local-video').srcObject = localStream;
-
-                    createPeerConnection(activeChatUser);
-
-                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-                    const answer = await peerConnection.createAnswer();
-                    await peerConnection.setLocalDescription(answer);
-
-                    socket.emit('answer_call', { toUser: activeChatUser, answer: answer });
-                } catch (err) {
-                    alert('เกิดข้อผิดพลาดในการเปิดกล้องรับสาย');
-                }
-            }
-        });
-
-        socket.on('call_answered', async (data) => {
-            try {
-                if (peerConnection) {
-                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-                    document.getElementById('call-status-title').innerText = `เชื่อมต่อสำเร็จ กำลังสนทนา`;
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        });
-
-        socket.on('ice_candidate', async (data) => {
-            try {
-                if (peerConnection && data.candidate) {
-                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        });
-
-        socket.on('call_ended', () => {
-            hangUpCall();
-            alert('สายถูกตัดแล้ว');
-        });
-
-        function toggleCamera() {
-            if (localStream && localStream.getVideoTracks().length > 0) {
-                isCameraOn = !isCameraOn;
-                localStream.getVideoTracks()[0].enabled = isCameraOn;
-                document.getElementById('toggle-cam-btn').innerText = isCameraOn ? 'ปิดกล้อง' : 'เปิดกล้อง';
-            }
-        }
-
-        function hangUpCall() {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-            }
-            if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
-            }
-            document.getElementById('video-call-modal').style.display = 'none';
-            if (window.socket && activeChatUser) {
-                socket.emit('end_call', { toUser: activeChatUser });
-            }
-        }
-    </script>
-
-    <!-- Script หลักของระบบเว็บ -->
-    <script>
         let currentUserName = localStorage.getItem('currentUserName') || '';
 
         window.addEventListener('load', () => {
             if (currentUserName) {
                 fetchUsersAndCoins();
-                if (window.socket) window.socket.emit('user_online', currentUserName);
+                socket.emit('user_online', currentUserName);
             }
-            loadSongs();
             loadStats();
         });
 
         let onlineUsersList = [];
-        if (window.socket) {
-            window.socket.on('online_users_list', (users) => {
-                onlineUsersList = users;
-                updateFriendsStatusUI();
-            });
-        }
+        socket.on('online_users_list', (users) => {
+            onlineUsersList = users;
+            updateFriendsStatusUI();
+        });
 
         function updateFriendsStatusUI() {
             document.querySelectorAll('.friend-row-item').forEach(item => {
                 const fName = item.getAttribute('data-username');
                 const dot = item.querySelector('.status-dot');
-                if (dot) {
-                    dot.style.background = onlineUsersList.includes(fName) ? '#22c55e' : '#ef4444';
-                }
+                if (dot) dot.style.background = onlineUsersList.includes(fName) ? '#22c55e' : '#cbd5e1';
             });
         }
 
         function switchMode(modeId) {
             document.querySelectorAll('.app-mode').forEach(el => el.classList.add('hidden'));
             document.getElementById('mode-' + modeId).classList.remove('hidden');
-            document.querySelectorAll('nav button').forEach(btn => btn.classList.replace('text-blue-600', 'text-gray-500'));
-            document.getElementById('btn-' + modeId).classList.replace('text-gray-500', 'text-blue-600');
+            document.querySelectorAll('nav button').forEach(btn => btn.className = "text-slate-400 font-medium text-[11px] flex flex-col items-center gap-1 transition");
+            document.getElementById('btn-' + modeId).className = "text-blue-600 font-semibold text-[11px] flex flex-col items-center gap-1 transition";
             if (modeId === 'friends' && currentUserName) loadFriendsList();
         }
 
@@ -474,94 +251,64 @@
         function closeRegisterModal() { document.getElementById('registerModal').classList.add('hidden'); }
         function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
         function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
-        
-        // ฟังก์ชันควบคุม Modal เติมเหรียญ
         function openTopupModal() { document.getElementById('topupModal').classList.remove('hidden'); }
         function closeTopupModal() { document.getElementById('topupModal').classList.add('hidden'); }
 
         async function submitTopup() {
             const baht = document.getElementById('topupBaht').value;
-            if (!currentUserName) {
-                alert('กรุณาเข้าสู่ระบบก่อนเติมเหรียญ');
+            if (!currentUserName) { alert('กรุณาเข้าสู่ระบบก่อน'); closeTopupModal(); openLoginModal(); return; }
+            const res = await fetch('/api/topup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: currentUserName, amountBaht: Number(baht) })
+            });
+            const data = await res.json();
+            alert(data.message);
+            if (data.success) {
+                document.getElementById('header-user-coins').innerText = data.fbCoins;
                 closeTopupModal();
-                openLoginModal();
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/topup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: currentUserName, amountBaht: Number(baht) })
-                });
-                const data = await response.json();
-                alert(data.message);
-                if (data.success) {
-                    document.getElementById('header-user-coins').innerText = data.fbCoins;
-                    closeTopupModal();
-                }
-            } catch (err) {
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
             }
         }
 
         async function fetchUsersAndCoins() {
-            try {
-                const res = await fetch('/api/users');
-                const users = await res.json();
-                const me = users.find(u => u.name === currentUserName);
-                if (me) {
-                    document.getElementById('header-user-coins').innerText = me.fbCoins || 0;
-                    applyLoginState(currentUserName);
-                }
-            } catch (e) {
-                console.log('Error fetching user info');
+            const res = await fetch('/api/users');
+            const users = await res.json();
+            const me = users.find(u => u.name === currentUserName);
+            if (me) {
+                document.getElementById('header-user-coins').innerText = me.fbCoins || 0;
+                applyLoginState(currentUserName);
             }
         }
 
         function handleRegister() {
             const name = document.getElementById('reg-name').value.trim();
             const password = document.getElementById('reg-pass').value;
-            const email = document.getElementById('reg-email').value;
-            const phone = document.getElementById('reg-phone').value;
-            const securityQuestion = document.getElementById('reg-question').value;
-            const securityAnswer = document.getElementById('reg-answer').value.trim();
-
-            if (!name || !password) { alert('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน'); return; }
-
+            if (!name || !password) { alert('กรอกข้อมูลให้ครบถ้วน'); return; }
             fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, password, email, phone, securityQuestion, securityAnswer })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert('ลงทะเบียนสำเร็จ!');
-                    closeRegisterModal();
-                    openLoginModal();
-                } else { alert(data.message); }
+                body: JSON.stringify({ name, password })
+            }).then(res => res.json()).then(data => {
+                alert(data.message);
+                if (data.success) { closeRegisterModal(); openLoginModal(); }
             });
         }
 
         function handleLogin() {
             const name = document.getElementById('login-name').value.trim();
             const password = document.getElementById('login-pass').value;
-
             fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, password })
-            })
-            .then(res => res.json())
-            .then(data => {
+            }).then(res => res.json()).then(data => {
                 if (data.success) {
                     currentUserName = name;
                     localStorage.setItem('currentUserName', name);
                     applyLoginState(name);
                     fetchUsersAndCoins();
                     closeLoginModal();
-                    if (window.socket) window.socket.emit('user_online', name);
+                    socket.emit('user_online', name);
                 } else { alert(data.message); }
             });
         }
@@ -570,114 +317,149 @@
             document.getElementById('profile-name').innerText = userName;
             document.getElementById('profile-email').innerText = 'สมาชิกผู้ใช้งาน';
             document.getElementById('profile-initial').innerText = userName.charAt(0).toUpperCase();
-            document.getElementById('auth-buttons').innerHTML = `<button onclick="switchMode('profile')" class="bg-white text-blue-600 px-3 py-1 rounded font-semibold text-sm">👤 ${userName}</button>`;
+            document.getElementById('auth-buttons').innerHTML = `<button onclick="switchMode('profile')" class="bg-white/10 border border-white/30 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">👤 ${userName}</button>`;
             document.getElementById('wallet-badge').classList.remove('hidden');
             document.getElementById('friend-status-text').classList.add('hidden');
             document.getElementById('friend-content').classList.remove('hidden');
             document.getElementById('logout-btn').classList.remove('hidden');
         }
 
-        function logout() {
-            localStorage.removeItem('currentUserName');
-            location.reload();
-        }
+        function logout() { localStorage.removeItem('currentUserName'); location.reload(); }
 
         function loadStats() {
-            fetch('/api/stats')
-                .then(res => res.json())
-                .then(data => {
-                    if(data.totalMembers !== undefined) document.getElementById('stat-total-members').innerText = data.totalMembers;
-                });
+            fetch('/api/stats').then(res => res.json()).then(data => {
+                if(data.totalMembers !== undefined) document.getElementById('stat-total-members').innerText = data.totalMembers;
+            });
         }
 
+        // ระบบเพื่อนและติดตาม
         function loadFriendsList() {
-            fetch('/api/users')
-                .then(res => res.json())
-                .then(users => {
-                    const listContainer = document.getElementById('friend-list');
-                    listContainer.innerHTML = '';
-                    const others = users.filter(m => m.name !== currentUserName);
-                    others.forEach(f => {
-                        const row = document.createElement('div');
-                        row.className = "friend-row-item flex items-center justify-between bg-gray-50 p-2 rounded border text-sm";
-                        row.setAttribute('data-username', f.name);
-                        row.innerHTML = `
-                            <div class="flex items-center gap-2">
-                                <span class="status-dot w-2.5 h-2.5 rounded-full inline-block" style="background: #ef4444;"></span>
-                                <span class="font-medium text-gray-700">${f.name}</span>
+            fetch('/api/users').then(res => res.json()).then(users => {
+                const listContainer = document.getElementById('friend-list');
+                listContainer.innerHTML = '';
+                const others = users.filter(m => m.name !== currentUserName);
+                
+                others.forEach(f => {
+                    const meObj = users.find(u => u.name === currentUserName);
+                    const isFollowing = meObj && meObj.following && meObj.following.includes(f.name);
+                    const isFriend = meObj && meObj.friends && meObj.friends.includes(f.name);
+
+                    const row = document.createElement('div');
+                    row.className = "friend-row-item flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs";
+                    row.setAttribute('data-username', f.name);
+                    row.innerHTML = `
+                        <div class="flex items-center gap-2.5">
+                            <span class="status-dot w-2.5 h-2.5 rounded-full inline-block" style="background: #cbd5e1;"></span>
+                            <div>
+                                <span class="font-bold text-slate-700 block">${f.name}</span>
+                                <span class="text-[10px] text-slate-400">${f.statusMessage || 'ไม่มีสถานะ'}</span>
                             </div>
-                            <button onclick="openFloatingChat('${f.name}')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs">💬 แชท</button>
-                        `;
-                        listContainer.appendChild(row);
-                    });
-                    updateFriendsStatusUI();
+                        </div>
+                        <div class="flex gap-1.5">
+                            <button onclick="toggleFollow('${f.name}')" class="px-2.5 py-1 rounded-lg text-[10px] font-semibold transition ${isFollowing ? 'bg-slate-200 text-slate-600' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}">${isFollowing ? 'กำลังติดตาม' : '➕ ติดตาม'}</button>
+                            <button onclick="toggleAddFriend('${f.name}')" class="px-2.5 py-1 rounded-lg text-[10px] font-semibold transition ${isFriend ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}">${isFriend ? 'เพื่อนแล้ว' : '🤝 เพิ่มเพื่อน'}</button>
+                            <button onclick="openFloatingChat('${f.name}')" class="bg-blue-600 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold hover:bg-blue-700 transition">💬 แชท</button>
+                        </div>
+                    `;
+                    listContainer.appendChild(row);
                 });
+                updateFriendsStatusUI();
+            });
+        }
+
+        async function toggleFollow(targetName) {
+            if (!currentUserName) { openLoginModal(); return; }
+            await fetch('/api/follow', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentUserName, targetUserName: targetName })
+            });
+            loadFriendsList();
+        }
+
+        async function toggleAddFriend(targetName) {
+            if (!currentUserName) { openLoginModal(); return; }
+            await fetch('/api/add-friend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentUserName, targetUserName: targetName })
+            });
+            loadFriendsList();
         }
 
         function sendPublicMessage() {
             const input = document.getElementById('public-chat-input');
             const message = input.value.trim();
             if (!message) return;
-            const sender = currentUserName || 'ผู้เยี่ยมชม';
-            if (window.socket) window.socket.emit('chat-message', { sender, message });
+            socket.emit('chat-message', { sender: currentUserName || 'ผู้เยี่ยมชม', message });
             input.value = '';
         }
+
+        socket.on('chat-message', (data) => {
+            const chatBox = document.getElementById('public-chat-box');
+            const msg = document.createElement('div');
+            msg.className = "bg-slate-100 p-2.5 rounded-xl text-xs break-words";
+            msg.innerHTML = `<span class="font-bold text-blue-600">${data.sender}:</span> ${data.message}`;
+            chatBox.appendChild(msg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
 
         let activeChatUser = null;
         function openFloatingChat(username) {
             activeChatUser = username;
             document.getElementById('chat-title-name').innerText = `💬 แชทกับ ${username}`;
-            document.getElementById('floating-chat-window').style.display = 'block';
+            document.getElementById('floating-chat-window').classList.remove('hidden');
             loadPrivateMessages(username);
         }
         function closeFloatingChat() {
-            document.getElementById('floating-chat-window').style.display = 'none';
+            document.getElementById('floating-chat-window').classList.add('hidden');
             activeChatUser = null;
         }
 
         function loadPrivateMessages(targetUser) {
             if (!currentUserName) return;
-            fetch(`/api/private-messages/${currentUserName}/${targetUser}`)
-                .then(res => res.json())
-                .then(msgs => {
-                    const box = document.getElementById('floating-chat-messages');
-                    box.innerHTML = '';
-                    msgs.forEach(m => {
-                        const div = document.createElement('div');
-                        div.style.margin = '4px 0';
-                        div.style.textAlign = m.sender === currentUserName ? 'right' : 'left';
-                        div.innerHTML = `<span style="background: ${m.sender === currentUserName ? '#dbeafe' : '#f3f4f6'}; padding: 4px 8px; border-radius: 6px; display: inline-block;"><b>${m.sender}:</b> ${m.message}</span>`;
-                        box.appendChild(div);
-                    });
-                    box.scrollTop = box.scrollHeight;
+            fetch(`/api/private-messages/${currentUserName}/${targetUser}`).then(res => res.json()).then(msgs => {
+                const box = document.getElementById('floating-chat-messages');
+                box.innerHTML = '';
+                msgs.forEach(m => {
+                    const div = document.createElement('div');
+                    div.style.textAlign = m.sender === currentUserName ? 'right' : 'left';
+                    div.innerHTML = `<span class="inline-block px-3 py-1.5 rounded-xl ${m.sender === currentUserName ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-800'}"><b>${m.sender}:</b> ${m.message}</span>`;
+                    box.appendChild(div);
                 });
+                box.scrollTop = box.scrollHeight;
+            });
         }
 
         function sendFloatingMessage() {
             const input = document.getElementById('floating-chat-input');
             const message = input.value.trim();
             if (!message || !activeChatUser || !currentUserName) return;
-            if (window.socket) {
-                window.socket.emit('send_private_message', { sender: currentUserName, receiver: activeChatUser, message: message });
-            }
+            socket.emit('send_private_message', { sender: currentUserName, receiver: activeChatUser, message });
             input.value = '';
         }
 
-        if (window.socket) {
-            window.socket.on('receive_private_message', (msg) => {
-                if (activeChatUser && (msg.sender === activeChatUser || msg.receiver === activeChatUser)) {
-                    playNotificationSound();
-                    showNewMessagePopup("ข้อความส่วนตัวจาก " + msg.sender, msg.message);
+        socket.on('receive_private_message', (msg) => {
+            if (activeChatUser && (msg.sender === activeChatUser || msg.receiver === activeChatUser)) {
+                const box = document.getElementById('floating-chat-messages');
+                const div = document.createElement('div');
+                div.style.textAlign = msg.sender === currentUserName ? 'right' : 'left';
+                div.innerHTML = `<span class="inline-block px-3 py-1.5 rounded-xl ${msg.sender === currentUserName ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-800'}"><b>${msg.sender}:</b> ${msg.message}</span>`;
+                box.appendChild(div);
+                box.scrollTop = box.scrollHeight;
+            }
+        });
 
-                    const box = document.getElementById('floating-chat-messages');
-                    const div = document.createElement('div');
-                    div.style.margin = '4px 0';
-                    div.style.textAlign = msg.sender === currentUserName ? 'right' : 'left';
-                    div.innerHTML = `<span style="background: ${msg.sender === currentUserName ? '#dbeafe' : '#f3f4f6'}; padding: 4px 8px; border-radius: 6px; display: inline-block;"><b>${msg.sender}:</b> ${msg.message}</span>`;
-                    box.appendChild(div);
-                    box.scrollTop = box.scrollHeight;
-                }
+        async function uploadProfileData() {
+            const statusMessage = document.getElementById('profile-status-input').value;
+            if (!currentUserName) return;
+            const res = await fetch('/api/update-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: currentUserName, statusMessage })
             });
+            const data = await res.json();
+            alert(data.message);
         }
 
         let currentAudioMode = 'radio';
@@ -687,21 +469,16 @@
             const title = document.getElementById('player-mode-title');
             if (currentAudioMode === 'radio') {
                 currentAudioMode = 'mp3';
-                title.innerText = '🎵 เครื่องเล่น MP3';
+                title.innerHTML = '🎵 เครื่องเล่นเพลง';
                 radioContainer.classList.add('hidden');
                 mp3Container.classList.remove('hidden');
             } else {
                 currentAudioMode = 'radio';
-                title.innerText = '📻 วิทยุออนไลน์';
+                title.innerHTML = '📻 วิทยุออนไลน์';
                 mp3Container.classList.add('hidden');
                 radioContainer.classList.remove('hidden');
             }
         }
-        function uploadSong() {}
-        function loadSongs() {}
-        function renderSongList() {}
-        function filterSongs() {}
-        function uploadProfileData() {}
     </script>
 </body>
 </html>
