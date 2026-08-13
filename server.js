@@ -14,13 +14,11 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// เชื่อมต่อ MongoDB Atlas (ดึงค่าจาก Environment Variables ของ Render หรือค่าสำรอง)
 const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://admin:1234@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority";
 mongoose.connect(MONGO_URI)
     .then(() => console.log('MongoDB Connected Successfully!'))
     .catch(err => console.log('MongoDB Connection Error:', err));
 
-// Schema สำหรับผู้ใช้งาน
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
     password: { type: String, required: true },
@@ -32,7 +30,6 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
-// Schema สำหรับแชทส่วนตัว
 const privateMessageSchema = new mongoose.Schema({
     sender: { type: String, required: true },
     receiver: { type: String, required: true },
@@ -41,7 +38,6 @@ const privateMessageSchema = new mongoose.Schema({
 });
 const PrivateMessage = mongoose.model('PrivateMessage', privateMessageSchema);
 
-// API สมัครสมาชิก
 app.post('/api/register', async (req, res) => {
     try {
         const { name, password } = req.body;
@@ -54,7 +50,6 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// API เข้าสู่ระบบ
 app.post('/api/login', async (req, res) => {
     try {
         const { name, password } = req.body;
@@ -66,7 +61,6 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// API เติมเหรียญ
 app.post('/api/topup', async (req, res) => {
     try {
         const { name, amountBaht } = req.body;
@@ -79,7 +73,6 @@ app.post('/api/topup', async (req, res) => {
     }
 });
 
-// API สถิติ
 app.get('/api/stats', async (req, res) => {
     try {
         const count = await User.countDocuments();
@@ -89,7 +82,6 @@ app.get('/api/stats', async (req, res) => {
     }
 });
 
-// API ดึงรายชื่อผู้ใช้ทั้งหมด
 app.get('/api/users', async (req, res) => {
     try {
         const users = await User.find({}, 'name statusMessage fbCoins friends following followers');
@@ -99,7 +91,6 @@ app.get('/api/users', async (req, res) => {
     }
 });
 
-// API อัปเดตโปรไฟล์ / สถานะ
 app.post('/api/update-profile', async (req, res) => {
     try {
         const { name, statusMessage } = req.body;
@@ -111,43 +102,6 @@ app.post('/api/update-profile', async (req, res) => {
     }
 });
 
-// API ติดตาม (Follow)
-app.post('/api/follow', async (req, res) => {
-    try {
-        const { currentUserName, targetUserName } = req.body;
-        const user = await User.findOne({ name: currentUserName });
-        if (user && user.following.includes(targetUserName)) {
-            await User.findOneAndUpdate({ name: currentUserName }, { $pull: { following: targetUserName } });
-            await User.findOneAndUpdate({ name: targetUserName }, { $pull: { followers: currentUserName } });
-        } else {
-            await User.findOneAndUpdate({ name: currentUserName }, { $addToSet: { following: targetUserName } });
-            await User.findOneAndUpdate({ name: targetUserName }, { $addToSet: { followers: currentUserName } });
-        }
-        res.json({ success: true });
-    } catch (err) {
-        res.json({ success: false });
-    }
-});
-
-// API เพิ่มเพื่อน (Add Friend)
-app.post('/api/add-friend', async (req, res) => {
-    try {
-        const { currentUserName, targetUserName } = req.body;
-        const user = await User.findOne({ name: currentUserName });
-        if (user && user.friends.includes(targetUserName)) {
-            await User.findOneAndUpdate({ name: currentUserName }, { $pull: { friends: targetUserName } });
-            await User.findOneAndUpdate({ name: targetUserName }, { $pull: { friends: currentUserName } });
-        } else {
-            await User.findOneAndUpdate({ name: currentUserName }, { $addToSet: { friends: targetUserName } });
-            await User.findOneAndUpdate({ name: targetUserName }, { $addToSet: { friends: currentUserName } });
-        }
-        res.json({ success: true });
-    } catch (err) {
-        res.json({ success: false });
-    }
-});
-
-// API ประวัติแชทส่วนตัว
 app.get('/api/private-messages/:userA/:userB', async (req, res) => {
     try {
         const { userA, userB } = req.params;
@@ -163,13 +117,16 @@ app.get('/api/private-messages/:userA/:userB', async (req, res) => {
     }
 });
 
-// ระบบ Socket.io สำหรับ Real-time
+// ระบบ Socket.io สำหรับ Real-time & Video Call / Live Signaling
 const onlineUsers = new Map();
+const activeLiveRooms = new Set();
+
 io.on('connection', (socket) => {
     socket.on('user_online', (username) => {
         if (username) {
             onlineUsers.set(username, socket.id);
             io.emit('online_users_list', Array.from(onlineUsers.keys()));
+            io.emit('update_live_rooms', Array.from(activeLiveRooms));
         }
     });
 
@@ -196,18 +153,35 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 🔴 จัดการระบบไลฟ์สด & เปิด/ปิดกล้อง
+    socket.on('start_live', (data) => {
+        activeLiveRooms.add(data.username);
+        io.emit('update_live_rooms', Array.from(activeLiveRooms));
+    });
+
+    socket.on('stop_live', (data) => {
+        activeLiveRooms.delete(data.username);
+        io.emit('update_live_rooms', Array.from(activeLiveRooms));
+    });
+
+    // ส่งสถานะการเปิด/ปิดกล้องหรือไมค์ไปยังผู้รับชมคนอื่นในห้อง
+    socket.on('toggle_media_status', (data) => {
+        io.broadcast.emit('remote_media_status_changed', data);
+    });
+
     socket.on('disconnect', () => {
         for (let [username, sId] of onlineUsers.entries()) {
             if (sId === socket.id) {
                 onlineUsers.delete(username);
+                activeLiveRooms.delete(username);
                 break;
             }
         }
         io.emit('online_users_list', Array.from(onlineUsers.keys()));
+        io.emit('update_live_rooms', Array.from(activeLiveRooms));
     });
 });
 
-// ใช้พอร์ตของ Render กำหนดอัตโนมัติ
 const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
