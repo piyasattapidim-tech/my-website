@@ -10,8 +10,8 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(cors());
-app.use(express.json({ limit: '15mb' }));
-app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use(express.static(path.join(__dirname)));
 
 const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://admin:1234@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority";
@@ -22,103 +22,58 @@ mongoose.connect(MONGO_URI)
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    statusMessage: { type: String, default: '' },
-    fbCoins: { type: Number, default: 50 },
-    friends: [{ type: String }],
-    following: [{ type: String }],
-    followers: [{ type: String }]
+    fbCoins: { type: Number, default: 100 },
+    friends: [String]
 });
 const User = mongoose.model('User', userSchema);
-
-const privateMessageSchema = new mongoose.Schema({
-    sender: { type: String, required: true },
-    receiver: { type: String, required: true },
-    message: { type: String, required: true },
-    mediaUrl: { type: String, default: '' },
-    mediaType: { type: String, default: '' },
-    createdAt: { type: Date, default: Date.now }
-});
-const PrivateMessage = mongoose.model('PrivateMessage', privateMessageSchema);
 
 const postSchema = new mongoose.Schema({
     author: String,
     text: String,
+    mediaUrl: String,
+    mediaType: String,
     createdAt: { type: Date, default: Date.now }
 });
 const Post = mongoose.model('Post', postSchema);
 
-app.post('/api/register', async (req, res) => {
-    try {
-        const { name, password } = req.body;
-        const existingUser = await User.findOne({ name });
-        if (existingUser) return res.json({ success: false, message: 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว' });
-        await new User({ name, password }).save();
-        res.json({ success: true, message: 'ลงทะเบียนสำเร็จ' });
-    } catch (err) {
-        res.json({ success: false, message: 'เกิดข้อผิดพลาดในระบบฐานข้อมูล' });
-    }
+const privateMessageSchema = new mongoose.Schema({
+    sender: String,
+    receiver: String,
+    message: String,
+    createdAt: { type: Date, default: Date.now }
 });
+const PrivateMessage = mongoose.model('PrivateMessage', privateMessageSchema);
 
 app.post('/api/login', async (req, res) => {
     try {
         const { name, password } = req.body;
-        const user = await User.findOne({ name, password });
-        if (user) res.json({ success: true, message: 'เข้าสู่ระบบสำเร็จ', user });
-        else res.json({ success: false, message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
+        let user = await User.findOne({ name, password });
+        if (!user) {
+            user = new User({ name, password, fbCoins: 100 });
+            await user.save();
+        }
+        res.json({ success: true, message: 'เข้าสู่ระบบสำเร็จ', user });
     } catch (err) {
-        res.json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
     }
 });
 
 app.get('/api/users', async (req, res) => {
     try {
-        const users = await User.find({}, 'name statusMessage fbCoins friends following followers');
+        const users = await User.find({}, 'name fbCoins friends');
         res.json(users);
     } catch (err) {
         res.json([]);
     }
 });
 
-app.get('/api/user-info', async (req, res) => {
+app.post('/api/topup', async (req, res) => {
     try {
-        const user = await User.findOne({ name: req.query.name });
-        if (user) res.json({ success: true, user });
-        else res.json({ success: false });
+        const { name, coins } = req.body;
+        await User.updateOne({ name }, { $inc: { fbCoins: coins } });
+        res.json({ success: true });
     } catch (err) {
         res.json({ success: false });
-    }
-});
-
-// API ระบบเพิ่มเพื่อน
-app.post('/api/add-friend', async (req, res) => {
-    try {
-        const { name, targetUser } = req.body;
-        await User.updateOne({ name }, { $addToSet: { friends: targetUser } });
-        await User.updateOne({ name: targetUser }, { $addToSet: { friends: name } });
-        res.json({ success: true, message: `เพิ่มเพื่อนกับ ${targetUser} สำเร็จ!` });
-    } catch (err) {
-        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
-    }
-});
-
-// API ระบบติดตาม
-app.post('/api/follow', async (req, res) => {
-    try {
-        const { name, targetUser } = req.body;
-        await User.updateOne({ name }, { $addToSet: { following: targetUser } });
-        await User.updateOne({ name: targetUser }, { $addToSet: { followers: name } });
-        res.json({ success: true, message: `ติดตาม ${targetUser} สำเร็จ!` });
-    } catch (err) {
-        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
-    }
-});
-
-app.get('/api/stats', async (req, res) => {
-    try {
-        const count = await User.countDocuments();
-        res.json({ totalMembers: count });
-    } catch (err) {
-        res.json({ totalMembers: 0 });
     }
 });
 
@@ -133,21 +88,46 @@ app.get('/api/posts', async (req, res) => {
 
 app.post('/api/posts', async (req, res) => {
     try {
-        const { author, text } = req.body;
-        await new Post({ author, text }).save();
+        const { author, text, mediaUrl, mediaType } = req.body;
+        await new Post({ author, text, mediaUrl, mediaType }).save();
         res.json({ success: true });
     } catch (err) {
         res.json({ success: false });
     }
 });
 
-app.get('/api/private-messages/:userA/:userB', async (req, res) => {
+app.post('/api/support-author', async (req, res) => {
     try {
-        const { userA, userB } = req.params;
+        const { sender, receiver, coins } = req.body;
+        const senderUser = await User.findOne({ name: sender });
+        if (!senderUser || senderUser.fbCoins < coins) {
+            return res.json({ success: false, message: 'เหรียญของคุณไม่เพียงพอสำหรับการสนับสนุน' });
+        }
+        await User.updateOne({ name: sender }, { $inc: { fbCoins: -coins } });
+        await User.updateOne({ name: receiver }, { $inc: { fbCoins: coins } });
+        res.json({ success: true, message: `สนับสนุน ${receiver} สำเร็จ! (${coins} เหรียญ)` });
+    } catch (err) {
+        res.json({ success: false, message: 'เกิดข้อผิดพลาดในการทำรายการ' });
+    }
+});
+
+app.post('/api/add-friend', async (req, res) => {
+    try {
+        const { user, friend } = req.body;
+        await User.updateOne({ name: user }, { $addToSet: { friends: friend } });
+        res.json({ success: true, message: `เพิ่มเพื่อน ${friend} เรียบร้อยแล้ว` });
+    } catch (err) {
+        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
+    }
+});
+
+app.get('/api/private-messages', async (req, res) => {
+    try {
+        const { user1, user2 } = req.query;
         const messages = await PrivateMessage.find({
             $or: [
-                { sender: userA, receiver: userB },
-                { sender: userB, receiver: userA }
+                { sender: user1, receiver: user2 },
+                { sender: user2, receiver: user1 }
             ]
         }).sort({ createdAt: 1 });
         res.json(messages);
@@ -156,45 +136,15 @@ app.get('/api/private-messages/:userA/:userB', async (req, res) => {
     }
 });
 
-const onlineUsers = new Map();
-
 io.on('connection', (socket) => {
-    socket.on('user_online', (username) => {
-        if (username) {
-            onlineUsers.set(username, socket.id);
-            io.emit('online_users_list', Array.from(onlineUsers.keys()));
-        }
+    socket.on('public_message', (data) => {
+        io.emit('receive_public_message', data);
     });
 
     socket.on('send_private_message', async (data) => {
-        try {
-            const newMessage = new PrivateMessage({
-                sender: data.sender,
-                receiver: data.receiver,
-                message: data.message,
-                mediaUrl: data.mediaUrl || '',
-                mediaType: data.mediaType || ''
-            });
-            await newMessage.save();
-
-            const receiverSocketId = onlineUsers.get(data.receiver);
-            if (receiverSocketId) {
-                io.to(receiverSocketId).emit('receive_private_message', newMessage);
-            }
-            socket.emit('receive_private_message', newMessage);
-        } catch (err) {
-            console.error(err);
-        }
-    });
-
-    socket.on('disconnect', () => {
-        for (let [username, sId] of onlineUsers.entries()) {
-            if (sId === socket.id) {
-                onlineUsers.delete(username);
-                break;
-            }
-        }
-        io.emit('online_users_list', Array.from(onlineUsers.keys()));
+        const { sender, receiver, message } = data;
+        await new PrivateMessage({ sender, receiver, message }).save();
+        io.emit('receive_private_message', data);
     });
 });
 
