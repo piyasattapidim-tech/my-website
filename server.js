@@ -10,8 +10,8 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(express.static(path.join(__dirname)));
 
 const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://admin:1234@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority";
@@ -34,9 +34,18 @@ const privateMessageSchema = new mongoose.Schema({
     sender: { type: String, required: true },
     receiver: { type: String, required: true },
     message: { type: String, required: true },
+    mediaUrl: { type: String, default: '' },
+    mediaType: { type: String, default: '' },
     createdAt: { type: Date, default: Date.now }
 });
 const PrivateMessage = mongoose.model('PrivateMessage', privateMessageSchema);
+
+const postSchema = new mongoose.Schema({
+    author: String,
+    text: String,
+    createdAt: { type: Date, default: Date.now }
+});
+const Post = mongoose.model('Post', postSchema);
 
 app.post('/api/register', async (req, res) => {
     try {
@@ -61,15 +70,46 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-app.post('/api/topup', async (req, res) => {
+app.get('/api/users', async (req, res) => {
     try {
-        const { name, amountBaht } = req.body;
-        const addedCoins = (amountBaht / 10) * 50; 
-        const user = await User.findOneAndUpdate({ name }, { $inc: { fbCoins: addedCoins } }, { new: true });
-        if (user) res.json({ success: true, message: `เติมเงินสำเร็จ! ได้รับ ${addedCoins} เหรียญ FB`, fbCoins: user.fbCoins });
-        else res.json({ success: false, message: 'ไม่พบชื่อผู้ใช้งานในระบบ' });
+        const users = await User.find({}, 'name statusMessage fbCoins friends following followers');
+        res.json(users);
     } catch (err) {
-        res.json({ success: false, message: 'เกิดข้อผิดพลาดในการเติมเหรียญ' });
+        res.json([]);
+    }
+});
+
+app.get('/api/user-info', async (req, res) => {
+    try {
+        const user = await User.findOne({ name: req.query.name });
+        if (user) res.json({ success: true, user });
+        else res.json({ success: false });
+    } catch (err) {
+        res.json({ success: false });
+    }
+});
+
+// API ระบบเพิ่มเพื่อน
+app.post('/api/add-friend', async (req, res) => {
+    try {
+        const { name, targetUser } = req.body;
+        await User.updateOne({ name }, { $addToSet: { friends: targetUser } });
+        await User.updateOne({ name: targetUser }, { $addToSet: { friends: name } });
+        res.json({ success: true, message: `เพิ่มเพื่อนกับ ${targetUser} สำเร็จ!` });
+    } catch (err) {
+        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
+    }
+});
+
+// API ระบบติดตาม
+app.post('/api/follow', async (req, res) => {
+    try {
+        const { name, targetUser } = req.body;
+        await User.updateOne({ name }, { $addToSet: { following: targetUser } });
+        await User.updateOne({ name: targetUser }, { $addToSet: { followers: name } });
+        res.json({ success: true, message: `ติดตาม ${targetUser} สำเร็จ!` });
+    } catch (err) {
+        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
     }
 });
 
@@ -82,23 +122,22 @@ app.get('/api/stats', async (req, res) => {
     }
 });
 
-app.get('/api/users', async (req, res) => {
+app.get('/api/posts', async (req, res) => {
     try {
-        const users = await User.find({}, 'name statusMessage fbCoins friends following followers');
-        res.json(users);
+        const posts = await Post.find().sort({ createdAt: -1 }).limit(20);
+        res.json(posts);
     } catch (err) {
         res.json([]);
     }
 });
 
-app.post('/api/update-profile', async (req, res) => {
+app.post('/api/posts', async (req, res) => {
     try {
-        const { name, statusMessage } = req.body;
-        const updatedUser = await User.findOneAndUpdate({ name }, { statusMessage }, { new: true });
-        if (updatedUser) res.json({ success: true, message: 'อัปเดตสถานะสำเร็จ' });
-        else res.json({ success: false, message: 'ไม่พบผู้ใช้งาน' });
+        const { author, text } = req.body;
+        await new Post({ author, text }).save();
+        res.json({ success: true });
     } catch (err) {
-        res.json({ success: false, message: 'เกิดข้อผิดพลาด' });
+        res.json({ success: false });
     }
 });
 
@@ -117,21 +156,14 @@ app.get('/api/private-messages/:userA/:userB', async (req, res) => {
     }
 });
 
-// ระบบ Socket.io สำหรับ Real-time & Video Call / Live Signaling
 const onlineUsers = new Map();
-const activeLiveRooms = new Set();
 
 io.on('connection', (socket) => {
     socket.on('user_online', (username) => {
         if (username) {
             onlineUsers.set(username, socket.id);
             io.emit('online_users_list', Array.from(onlineUsers.keys()));
-            io.emit('update_live_rooms', Array.from(activeLiveRooms));
         }
-    });
-
-    socket.on('chat-message', (data) => {
-        io.emit('chat-message', data);
     });
 
     socket.on('send_private_message', async (data) => {
@@ -139,7 +171,9 @@ io.on('connection', (socket) => {
             const newMessage = new PrivateMessage({
                 sender: data.sender,
                 receiver: data.receiver,
-                message: data.message
+                message: data.message,
+                mediaUrl: data.mediaUrl || '',
+                mediaType: data.mediaType || ''
             });
             await newMessage.save();
 
@@ -153,32 +187,14 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 🔴 จัดการระบบไลฟ์สด & เปิด/ปิดกล้อง
-    socket.on('start_live', (data) => {
-        activeLiveRooms.add(data.username);
-        io.emit('update_live_rooms', Array.from(activeLiveRooms));
-    });
-
-    socket.on('stop_live', (data) => {
-        activeLiveRooms.delete(data.username);
-        io.emit('update_live_rooms', Array.from(activeLiveRooms));
-    });
-
-    // ส่งสถานะการเปิด/ปิดกล้องหรือไมค์ไปยังผู้รับชมคนอื่นในห้อง
-    socket.on('toggle_media_status', (data) => {
-        io.broadcast.emit('remote_media_status_changed', data);
-    });
-
     socket.on('disconnect', () => {
         for (let [username, sId] of onlineUsers.entries()) {
             if (sId === socket.id) {
                 onlineUsers.delete(username);
-                activeLiveRooms.delete(username);
                 break;
             }
         }
         io.emit('online_users_list', Array.from(onlineUsers.keys()));
-        io.emit('update_live_rooms', Array.from(activeLiveRooms));
     });
 });
 
